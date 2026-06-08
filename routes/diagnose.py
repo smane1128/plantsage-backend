@@ -100,6 +100,7 @@ def _scan_dict(r: DiseaseScan, db: Session = None) -> dict:
         "status":              r.status,
         "follow_up_notes":     r.follow_up_notes,
         "resolved_at":         r.resolved_at.isoformat() if r.resolved_at else None,
+        "is_healthy":          bool(r.is_healthy) if r.is_healthy is not None else False,
     }
 
 
@@ -141,6 +142,7 @@ def diagnose(request: DiagnoseRequest, db: Session = Depends(get_db)):
             description=diag.get("description"),
             treatment=_safe_treatment_json(result.get("treatment")),
             status="resolved" if is_healthy else "active",
+            is_healthy=is_healthy,
             updated_date=datetime.utcnow(),
         )
         db.add(scan)

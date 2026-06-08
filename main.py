@@ -60,6 +60,7 @@ with engine.connect() as _conn:
         # Extended columns
         "ALTER TABLE disease_scans ADD COLUMN scientific_name TEXT",
         "ALTER TABLE disease_scans ADD COLUMN updated_date DATETIME",
+        "ALTER TABLE disease_scans ADD COLUMN is_healthy INTEGER DEFAULT 0",
         # Garden name + location per individual plant record
         "ALTER TABLE my_garden ADD COLUMN garden_name TEXT DEFAULT NULL",
         "ALTER TABLE my_garden ADD COLUMN location TEXT DEFAULT NULL",

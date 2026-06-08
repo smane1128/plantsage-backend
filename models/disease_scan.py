@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from datetime import datetime, UTC
 from database.db import Base
 
@@ -20,3 +20,4 @@ class DiseaseScan(Base):
     status          = Column(String, default='active', nullable=False)  # active | recovering | resolved
     follow_up_notes = Column(Text, nullable=True)
     resolved_at     = Column(DateTime, nullable=True)
+    is_healthy      = Column(Boolean, default=False, nullable=True)  # True = healthy scan, no disease
