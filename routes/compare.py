@@ -23,12 +23,20 @@ def compare_plants(id1: int, id2: int, db: Session = Depends(get_db)):
                 details = json.loads(p.details)
             except Exception:
                 pass
+        # Prefer gardenability_score inside details (single source of truth);
+        # fall back to the DB column. Always coerce to int so Dart casts safely.
+        score = details.get("gardenability_score") or p.suitability_score or 0
+        try:
+            score = int(score)
+        except (TypeError, ValueError):
+            score = 0
         return {
             "id": p.id,
             "plant_name": p.plant_name,
             "scientific_name": p.scientific_name,
             "recommendation": p.recommendation,
-            "suitability_score": p.suitability_score,
+            "suitability_score": score,
+            "gardenability_score": score,
             "image_path": p.image_path,
             "details": details,
         }
