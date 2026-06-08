@@ -36,8 +36,15 @@ Return ONLY a valid JSON object with this exact structure:
     "plant_type": "tree / shrub / flower / vegetable / herb / succulent / vine / grass / other",
     "origin": "Country or region of origin",
     "confidence_level": 85,
-    "description": "2-3 sentence description of the plant"
+    "description": "2-3 sentence description of the plant",
+    "image_features": ["leaves only", "no flowers", "no fruit", "no bark visible"],
+    "low_confidence_reason": "Only leaves/stems visible — many tropical trees share similar foliage"
   },
+  "possible_matches": [
+    {"plant_name": "Most Likely Species", "scientific_name": "Genus species", "confidence": 70, "distinguishing_note": "Why this might be correct"},
+    {"plant_name": "Alternative Species", "scientific_name": "Genus species", "confidence": 55, "distinguishing_note": "Similar foliage but different fruit shape"},
+    {"plant_name": "Third Candidate", "scientific_name": "Genus species", "confidence": 40, "distinguishing_note": "Cannot rule out without flowers"}
+  ],
   "suitability": {
     "climate": "Suitable climate type (e.g. Tropical, Temperate, Arid)",
     "malaysia_suitable": true,
@@ -107,6 +114,29 @@ Return ONLY a valid JSON object with this exact structure:
 
 Rules:
 - confidence_level and suitability_score must be integers (0-100)
+- CRITICAL — Confidence scoring based on visible features:
+  * confidence_level MUST reflect what is actually visible in the image, not what you assume.
+  * If ONLY leaves/stems are visible (no flowers, no fruit, no bark texture, no distinctive markings):
+    - confidence_level MUST be ≤ 70
+    - For tropical trees with similar foliage (e.g. Jackfruit, Water Apple, Guava, Syzygium spp., Rambutan, Longan, Mango): confidence_level MUST be ≤ 60
+    - Set low_confidence_reason explaining what is missing
+    - image_features MUST list what IS visible (e.g. ["leaves only", "no flowers", "no fruit"])
+  * confidence_level ≥ 85 is ONLY allowed when distinctive features are clearly visible:
+    - Fruit (ripe or unripe) visible on plant
+    - Flowers clearly visible
+    - Highly distinctive bark pattern (e.g. papery bark, thorns, corky texture)
+    - Unique leaf pattern that is genus/species-specific (e.g. variegation, pinnate vs. simple)
+    - Plant has a unique growth form impossible to confuse (e.g. cactus, pandanus, banana)
+  * confidence_level 71–84: Some features visible but not definitive
+  * confidence_level ≤ 70: Leaf/stem only or ambiguous image
+- possible_matches: ALWAYS include this array
+  * When confidence_level ≤ 84: include 2-4 alternative species that share similar characteristics
+  * When confidence_level ≥ 85: still include 1-2 alternatives for transparency
+  * Each entry needs: plant_name, scientific_name, confidence (integer), distinguishing_note
+  * For Malaysian tropical fruit trees with similar foliage: ALWAYS list related Syzygium spp., Myrtaceae family members, and other trees with similar leaf shape
+  * Confidence values in possible_matches must sum to less than 200 (they are NOT mutually exclusive probabilities)
+- image_features: list all visible distinguishing features, e.g. ["leaves only", "compound leaves", "flowers visible", "fruit visible", "distinctive bark", "thorns", "variegated leaves"]
+- low_confidence_reason: explain WHY confidence is limited (e.g. "Only leaves visible — Jackfruit and Water Apple share near-identical foliage"). Leave empty string "" if confidence ≥ 85 and identification is certain.
 - The suitability_score for purchase_decision MUST reflect ALL of the following factors together, not just climate compatibility:
   1. Climate suitability for Malaysia (tropical heat + humidity)
   2. Commercial availability — can this plant actually be purchased from a Malaysian nursery?
@@ -232,7 +262,97 @@ def identify_plant(image_base64: str, garden_profile: dict = None) -> dict:
         if raw.startswith("json"):
             raw = raw[4:]
 
-    return json.loads(raw)
+    result = json.loads(raw)
+
+    # ── Post-processing: enforce confidence caps & low-confidence warnings ──
+    _enforce_confidence(result)
+
+    return result
+
+
+def _enforce_confidence(result: dict) -> None:
+    """
+    Server-side enforcement of confidence rules:
+    - Caps confidence at 70 when image_features indicates leaf/stem only
+    - Caps confidence at 60 for ambiguous tropical fruit trees with similar foliage
+    - Injects a low_confidence_notice into identification when confidence < 85
+    - Ensures possible_matches is always present
+    """
+    ident = result.get("identification", {})
+    if not isinstance(ident, dict):
+        return
+
+    confidence = ident.get("confidence_level", 100)
+    image_features = ident.get("image_features", [])
+    low_conf_reason = ident.get("low_confidence_reason", "")
+
+    # Detect leaf-only scenarios
+    features_str = " ".join(str(f).lower() for f in image_features)
+    is_leaf_only = (
+        ("leaves only" in features_str or "leaf only" in features_str)
+        or (
+            "flower" not in features_str
+            and "fruit" not in features_str
+            and "bark" not in features_str
+            and len(image_features) > 0
+        )
+    )
+
+    # Detect confusable tropical fruit tree genera
+    plant_name_lower = (ident.get("plant_name") or "").lower()
+    sci_name_lower = (ident.get("scientific_name") or "").lower()
+    confusable_families = [
+        "syzygium", "psidium", "artocarpus", "eugenia", "myrtaceae",
+        "nephelium", "litchi", "dimocarpus", "mangifera", "annona",
+        "water apple", "guava", "jackfruit", "rambutan", "longan",
+        "lychee", "mango", "soursop", "custard apple", "jambu",
+    ]
+    is_confusable = any(k in plant_name_lower or k in sci_name_lower
+                        for k in confusable_families)
+
+    # Apply caps
+    if is_confusable and is_leaf_only and confidence > 60:
+        confidence = 60
+        ident["confidence_level"] = 60
+        if not low_conf_reason:
+            ident["low_confidence_reason"] = (
+                f"Only leaves visible — {ident.get('plant_name', 'this species')} shares "
+                "near-identical foliage with related tropical trees (Water Apple, Guava, "
+                "Syzygium spp.). Fruit or flowers required for reliable identification."
+            )
+    elif is_leaf_only and confidence > 70:
+        confidence = 70
+        ident["confidence_level"] = 70
+        if not low_conf_reason:
+            ident["low_confidence_reason"] = (
+                "Only leaves/stems visible — confidence capped. "
+                "Provide an image with flowers, fruit, or distinctive bark for higher accuracy."
+            )
+
+    # Inject low_confidence_notice for the app UI
+    if confidence < 85:
+        matches = result.get("possible_matches", [])
+        if not isinstance(matches, list):
+            matches = []
+        notice_parts = []
+        if low_conf_reason:
+            notice_parts.append(low_conf_reason)
+        if matches:
+            alts = ", ".join(
+                f"{m.get('plant_name', '?')} ({m.get('confidence', '?')}%)"
+                for m in matches[:3]
+            )
+            notice_parts.append(f"Other possible matches: {alts}.")
+        ident["low_confidence_notice"] = " ".join(notice_parts) if notice_parts else (
+            "Identification confidence is below 85%. Consider re-scanning with better lighting "
+            "or a clearer image showing flowers or fruit."
+        )
+    else:
+        ident["low_confidence_notice"] = ""
+
+    # Ensure possible_matches always exists
+    if "possible_matches" not in result:
+        result["possible_matches"] = []
 
 
 # ── Disease Diagnosis ─────────────────────────────────────────────────────────
