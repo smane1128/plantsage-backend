@@ -92,6 +92,8 @@ with engine.connect() as _conn:
         )""",
         "CREATE INDEX IF NOT EXISTS idx_care_tasks_plant_id ON care_tasks(plant_id)",
         "ALTER TABLE care_tasks ADD COLUMN schedule_source VARCHAR(20) DEFAULT NULL",
+        # Remove repot tasks — repotting is condition-based, not calendar-based
+        "DELETE FROM care_tasks WHERE task_type = 'repot'",
     ]:
         try:
             _conn.execute(text(_sql))

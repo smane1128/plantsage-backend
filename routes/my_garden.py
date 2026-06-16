@@ -11,7 +11,7 @@ from models.scan import ScanHistory
 from models.watering_history import WateringHistory
 from models.disease_scan import DiseaseScan
 from models.care_task import CareTask
-from services.care_schedule_service import get_care_intervals
+from services.care_schedule_service import get_care_intervals, get_watering_interval
 from datetime import datetime, UTC, timedelta
 
 router = APIRouter(prefix="/my-garden", tags=["my-garden"])
@@ -157,6 +157,15 @@ def add_to_my_garden(request: AddPlantRequest, db: Session = Depends(get_db)):
         ).first()
 
     details_json = scan.details if scan else None
+
+    # ── Auto-set watering interval if not already set ─────────────────────
+    if not plant.watering_interval_days:
+        plant.watering_interval_days = get_watering_interval(
+            details_json,
+            request.plant_type,
+            plant_name=request.plant_name,
+            scientific_name=request.scientific_name,
+        )
     intervals = get_care_intervals(
         details_json,
         request.plant_type,

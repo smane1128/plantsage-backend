@@ -1,20 +1,27 @@
 """
-Care schedule interval resolver — v2
+Care schedule interval resolver — v3
 
-Priority:
+Calendar tasks: fertilize | prune | pest_check  (repot removed — condition-based, not date-based)
+Watering:       handled separately via get_watering_interval()
+
+Priority for care tasks:
   1. Species-specific override  → source: "species_specific"
   2. AI response details JSON   → source: "ai_estimated"
   3. Plant-type fallback rules  → source: "plant_type_rule"
 
 Lifespan guard:
   Tasks whose interval >= 90% of plant expected lifespan are dropped (None).
+  Prune/fertilize are also skipped for plants where they are not applicable.
 
 Returns
 -------
-dict[str, dict | None]
-  Keys: "fertilize", "prune", "repot", "pest_check"
+get_care_intervals() → dict[str, dict | None]
+  Keys: "fertilize", "prune", "pest_check"
   dict value  → {"interval_days": int, "source": str}  — create this task
   None value  → skip this task (not applicable / plant too short-lived)
+
+get_watering_interval() → int
+  Returns interval_days for watering. Always returns a value (minimum 1).
 """
 from __future__ import annotations
 
@@ -26,11 +33,13 @@ SOURCE_SPECIES = "species_specific"
 SOURCE_AI      = "ai_estimated"
 SOURCE_TYPE    = "plant_type_rule"
 
-_ALL_TASKS = ("fertilize", "prune", "repot", "pest_check")
+# repot intentionally excluded — it is condition-based, not calendar-based
+_ALL_TASKS = ("fertilize", "prune", "pest_check")
 
 # ── Species-specific overrides ────────────────────────────────────────────────
 # "lifespan_days": approximate days until plant dies/is harvested (None = perennial)
-# "tasks": task_type → interval_days  (absent key = task not applicable)
+# "watering_days": default watering interval in days
+# "tasks": task_type → interval_days  (absent key = task not applicable for this plant)
 _SPECIES_DATA: list[dict[str, Any]] = [
 
     # ── Annuals / short crops ────────────────────────────────────────────────
@@ -38,72 +47,86 @@ _SPECIES_DATA: list[dict[str, Any]] = [
         "scientific": ["helianthus annuus"],
         "common":     ["sunflower"],
         "lifespan_days": 90,
+        "watering_days": 3,
         "tasks": {"fertilize": 21, "pest_check": 14},
+        # prune: not applicable for sunflowers
     },
     {
         "scientific": ["lactuca sativa"],
         "common":     ["lettuce", "selada"],
         "lifespan_days": 75,
+        "watering_days": 2,
         "tasks": {"fertilize": 14, "pest_check": 7},
     },
     {
         "scientific": ["zinnia elegans", "zinnia"],
         "common":     ["zinnia"],
         "lifespan_days": 70,
+        "watering_days": 3,
         "tasks": {"fertilize": 14, "pest_check": 7},
     },
     {
         "scientific": ["tagetes erecta", "tagetes patula", "tagetes"],
         "common":     ["marigold"],
         "lifespan_days": 90,
+        "watering_days": 3,
         "tasks": {"fertilize": 14, "prune": 21, "pest_check": 7},
+        # prune = dead-heading only
     },
     {
         "scientific": ["cosmos bipinnatus", "cosmos sulphureus"],
         "common":     ["cosmos"],
         "lifespan_days": 90,
+        "watering_days": 3,
         "tasks": {"fertilize": 21, "pest_check": 14},
     },
     {
         "scientific": ["brassica rapa subsp. chinensis", "brassica rapa"],
         "common":     ["pak choi", "bok choy", "pok choy", "sawi"],
         "lifespan_days": 60,
+        "watering_days": 2,
         "tasks": {"fertilize": 14, "pest_check": 7},
     },
     {
         "scientific": ["ipomoea aquatica"],
         "common":     ["kangkung", "water spinach", "morning glory vegetable"],
         "lifespan_days": 45,
+        "watering_days": 1,
         "tasks": {"fertilize": 21, "pest_check": 14},
     },
     {
         "scientific": ["amaranthus tricolor", "amaranthus viridis", "amaranthus"],
         "common":     ["bayam", "amaranth"],
         "lifespan_days": 45,
+        "watering_days": 2,
         "tasks": {"fertilize": 14, "pest_check": 7},
     },
     {
         "scientific": ["cucumis sativus"],
         "common":     ["cucumber", "timun"],
         "lifespan_days": 75,
+        "watering_days": 2,
         "tasks": {"fertilize": 14, "pest_check": 7},
     },
     {
         "scientific": ["raphanus sativus"],
         "common":     ["radish", "lobak"],
         "lifespan_days": 30,
+        "watering_days": 2,
         "tasks": {"fertilize": 14, "pest_check": 14},
     },
     {
         "scientific": ["coriandrum sativum"],
         "common":     ["coriander", "cilantro", "daun ketumbar"],
         "lifespan_days": 90,
+        "watering_days": 2,
         "tasks": {"fertilize": 21, "pest_check": 14},
     },
     {
         "scientific": ["allium fistulosum", "allium schoenoprasum"],
         "common":     ["spring onion", "scallion", "chives", "daun bawang"],
         "lifespan_days": 90,
+        "watering_days": 2,
         "tasks": {"fertilize": 21, "pest_check": 14},
     },
 
@@ -112,24 +135,28 @@ _SPECIES_DATA: list[dict[str, Any]] = [
         "scientific": ["solanum lycopersicum"],
         "common":     ["tomato", "tomatoes", "tomat"],
         "lifespan_days": 150,
+        "watering_days": 2,
         "tasks": {"fertilize": 14, "prune": 21, "pest_check": 7},
     },
     {
         "scientific": ["capsicum annuum", "capsicum frutescens"],
         "common":     ["chili", "chilli", "pepper", "cili"],
         "lifespan_days": 365,
-        "tasks": {"fertilize": 21, "prune": 60, "repot": 365, "pest_check": 14},
+        "watering_days": 3,
+        "tasks": {"fertilize": 21, "prune": 60, "pest_check": 14},
     },
     {
         "scientific": ["ocimum basilicum"],
         "common":     ["basil", "sweet basil", "daun selasih"],
         "lifespan_days": 180,
+        "watering_days": 2,
         "tasks": {"fertilize": 14, "prune": 14, "pest_check": 14},
     },
     {
         "scientific": ["petroselinum crispum"],
         "common":     ["parsley"],
         "lifespan_days": 365,
+        "watering_days": 2,
         "tasks": {"fertilize": 21, "prune": 14, "pest_check": 21},
     },
 
@@ -138,49 +165,57 @@ _SPECIES_DATA: list[dict[str, Any]] = [
         "scientific": ["rosa"],
         "common":     ["rose", "mawar"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 21, "prune": 30, "repot": 730, "pest_check": 7},
+        "watering_days": 3,
+        "tasks": {"fertilize": 21, "prune": 30, "pest_check": 7},
     },
     {
         "scientific": ["hibiscus rosa-sinensis", "hibiscus"],
         "common":     ["hibiscus", "bunga raya", "rosemallow"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 21, "prune": 45, "repot": 730, "pest_check": 14},
+        "watering_days": 3,
+        "tasks": {"fertilize": 21, "prune": 45, "pest_check": 14},
     },
     {
         "scientific": ["bougainvillea glabra", "bougainvillea spectabilis", "bougainvillea"],
         "common":     ["bougainvillea", "bunga kertas"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 30, "prune": 45, "repot": 730, "pest_check": 21},
+        "watering_days": 4,
+        "tasks": {"fertilize": 30, "prune": 45, "pest_check": 21},
     },
     {
         "scientific": ["plumeria rubra", "plumeria obtusa", "plumeria"],
         "common":     ["frangipani", "plumeria", "kamboja"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 30, "prune": 365, "repot": 730, "pest_check": 21},
+        "watering_days": 5,
+        "tasks": {"fertilize": 30, "prune": 365, "pest_check": 21},
     },
     {
         "scientific": ["ixora coccinea", "ixora"],
         "common":     ["ixora", "jungle geranium", "bunga jejarum"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 30, "prune": 45, "repot": 730, "pest_check": 21},
+        "watering_days": 3,
+        "tasks": {"fertilize": 30, "prune": 45, "pest_check": 21},
     },
     {
         "scientific": ["murraya koenigii"],
         "common":     ["curry leaf", "daun kari"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 30, "prune": 60, "repot": 365, "pest_check": 21},
+        "watering_days": 3,
+        "tasks": {"fertilize": 30, "prune": 60, "pest_check": 21},
     },
     {
         "scientific": ["mentha"],
         "common":     ["mint", "daun pudina"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 21, "prune": 14, "repot": 180, "pest_check": 14},
+        "watering_days": 2,
+        "tasks": {"fertilize": 21, "prune": 14, "pest_check": 14},
     },
     {
         "scientific": ["pandanus amaryllifolius"],
         "common":     ["pandan", "screwpine", "daun pandan"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 30, "prune": 60, "repot": 365, "pest_check": 21},
+        "watering_days": 3,
+        "tasks": {"fertilize": 30, "prune": 60, "pest_check": 21},
     },
 
     # ── Succulents ───────────────────────────────────────────────────────────
@@ -188,13 +223,16 @@ _SPECIES_DATA: list[dict[str, Any]] = [
         "scientific": ["aloe vera", "aloe barbadensis"],
         "common":     ["aloe vera", "aloe"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 60, "repot": 730, "pest_check": 30},
+        "watering_days": 14,
+        "tasks": {"fertilize": 60, "pest_check": 30},
+        # prune: not applicable
     },
     {
         "scientific": ["echeveria"],
         "common":     ["echeveria"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 60, "repot": 730, "pest_check": 30},
+        "watering_days": 14,
+        "tasks": {"fertilize": 60, "pest_check": 30},
     },
 
     # ── Tropical foliage ─────────────────────────────────────────────────────
@@ -202,43 +240,50 @@ _SPECIES_DATA: list[dict[str, Any]] = [
         "scientific": ["epipremnum aureum"],
         "common":     ["pothos", "money plant", "devil's ivy"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 30, "prune": 30, "repot": 365, "pest_check": 14},
+        "watering_days": 7,
+        "tasks": {"fertilize": 30, "prune": 30, "pest_check": 14},
     },
     {
         "scientific": ["sansevieria trifasciata", "dracaena trifasciata"],
         "common":     ["snake plant", "mother-in-law's tongue", "lidah mertua"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 60, "repot": 730, "pest_check": 30},
+        "watering_days": 14,
+        "tasks": {"fertilize": 60, "pest_check": 30},
     },
     {
         "scientific": ["spathiphyllum wallisii", "spathiphyllum"],
         "common":     ["peace lily"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 30, "prune": 45, "repot": 365, "pest_check": 14},
+        "watering_days": 7,
+        "tasks": {"fertilize": 30, "prune": 45, "pest_check": 14},
     },
     {
         "scientific": ["monstera deliciosa", "monstera"],
         "common":     ["monstera", "swiss cheese plant"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 30, "prune": 60, "repot": 365, "pest_check": 14},
+        "watering_days": 7,
+        "tasks": {"fertilize": 30, "prune": 60, "pest_check": 14},
     },
     {
         "scientific": ["ficus benjamina", "ficus lyrata", "ficus elastica"],
         "common":     ["ficus", "rubber plant", "fiddle leaf fig", "weeping fig"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 30, "prune": 60, "repot": 730, "pest_check": 21},
+        "watering_days": 7,
+        "tasks": {"fertilize": 30, "prune": 60, "pest_check": 21},
     },
     {
         "scientific": ["caladium bicolor", "caladium"],
         "common":     ["caladium", "keladi"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 21, "repot": 365, "pest_check": 14},
+        "watering_days": 4,
+        "tasks": {"fertilize": 21, "pest_check": 14},
     },
     {
         "scientific": ["aglaonema"],
         "common":     ["aglaonema", "chinese evergreen"],
         "lifespan_days": None,
-        "tasks": {"fertilize": 30, "prune": 60, "repot": 365, "pest_check": 21},
+        "watering_days": 7,
+        "tasks": {"fertilize": 30, "prune": 60, "pest_check": 21},
     },
 ]
 
@@ -272,20 +317,34 @@ def _lookup_species(scientific_name: str | None, common_name: str | None) -> dic
     return None
 
 
-# ── Plant-type fallback table ─────────────────────────────────────────────────
+# ── Plant-type fallback tables ────────────────────────────────────────────────
 _TYPE_DEFAULTS: dict[str, dict[str, int]] = {
-    "succulent":  {"fertilize": 60,  "prune": 90,  "repot": 730, "pest_check": 30},
-    "cactus":     {"fertilize": 60,  "prune": 90,  "repot": 730, "pest_check": 30},
-    "flower":     {"fertilize": 14,  "prune": 30,  "repot": 365, "pest_check": 14},
-    "shrub":      {"fertilize": 21,  "prune": 45,  "repot": 365, "pest_check": 21},
-    "tree":       {"fertilize": 30,  "prune": 60,  "repot": 730, "pest_check": 21},
-    "vegetable":  {"fertilize": 14,  "prune": 21,  "repot": 180, "pest_check": 7},
-    "herb":       {"fertilize": 14,  "prune": 14,  "repot": 180, "pest_check": 14},
-    "vine":       {"fertilize": 21,  "prune": 30,  "repot": 365, "pest_check": 14},
-    "grass":      {"fertilize": 30,  "prune": 14,  "repot": 730, "pest_check": 21},
-    "other":      {"fertilize": 30,  "prune": 60,  "repot": 365, "pest_check": 14},
+    "succulent":  {"fertilize": 60,  "prune": 90,  "pest_check": 30},
+    "cactus":     {"fertilize": 60,  "prune": 90,  "pest_check": 30},
+    "flower":     {"fertilize": 14,  "prune": 30,  "pest_check": 14},
+    "shrub":      {"fertilize": 21,  "prune": 45,  "pest_check": 21},
+    "tree":       {"fertilize": 30,  "prune": 60,  "pest_check": 21},
+    "vegetable":  {"fertilize": 14,  "prune": 21,  "pest_check": 7},
+    "herb":       {"fertilize": 14,  "prune": 14,  "pest_check": 14},
+    "vine":       {"fertilize": 21,  "prune": 30,  "pest_check": 14},
+    "grass":      {"fertilize": 30,  "prune": 14,  "pest_check": 21},
+    "other":      {"fertilize": 30,  "prune": 60,  "pest_check": 14},
 }
 _DEFAULT = _TYPE_DEFAULTS["other"]
+
+_WATERING_DEFAULTS: dict[str, int] = {
+    "succulent":  14,
+    "cactus":     21,
+    "flower":     3,
+    "shrub":      4,
+    "tree":       5,
+    "vegetable":  2,
+    "herb":       2,
+    "vine":       3,
+    "grass":      3,
+    "other":      4,
+}
+_WATERING_DEFAULT = _WATERING_DEFAULTS["other"]
 
 
 def _text_to_days(text: str) -> int | None:
@@ -342,7 +401,8 @@ def get_care_intervals(
     scientific_name: str | None = None,
 ) -> dict[str, dict[str, Any] | None]:
     """
-    Return care schedule for all 4 task types.
+    Return care schedule for fertilize, prune, pest_check.
+    (repot is excluded — it is condition-based, not calendar-based)
 
     Each value is either:
       {"interval_days": int, "source": str}  — create this task
@@ -386,7 +446,6 @@ def get_care_intervals(
 
             ai_intervals["fertilize"]  = _text_to_days(fertilizer_text)
             ai_intervals["prune"]      = _text_to_days(pruning_text)
-            ai_intervals["repot"]      = None   # no AI field for repotting
             ai_intervals["pest_check"] = _pest_check_days(pest_text)
         except (json.JSONDecodeError, AttributeError):
             pass
@@ -406,3 +465,41 @@ def get_care_intervals(
             result[task_type] = {"interval_days": interval, "source": source}
 
     return result
+
+
+def get_watering_interval(
+    details_json:    str | None,
+    plant_type:      str | None,
+    plant_name:      str | None = None,
+    scientific_name: str | None = None,
+) -> int:
+    """
+    Return watering interval in days. Always returns a positive integer.
+
+    Priority:
+      1. Species-specific database
+      2. AI watering text from details_json
+      3. Plant-type fallback
+    """
+    # 1. Species override
+    species = _lookup_species(scientific_name, plant_name)
+    if species and "watering_days" in species:
+        return max(1, species["watering_days"])
+
+    # 2. AI watering text
+    if details_json:
+        try:
+            data = json.loads(details_json)
+            watering_text = (
+                data.get("growing", {}).get("watering") or
+                data.get("growing", {}).get("water") or ""
+            )
+            days = _text_to_days(watering_text)
+            if days and 1 <= days <= 30:
+                return days
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
+    # 3. Plant-type fallback
+    pt = (plant_type or "").lower().strip()
+    return _WATERING_DEFAULTS.get(pt, _WATERING_DEFAULT)

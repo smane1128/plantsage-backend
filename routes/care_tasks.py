@@ -17,7 +17,6 @@ router = APIRouter(prefix="/care-tasks", tags=["care-tasks"])
 _DEFAULT_INTERVALS: dict[str, int] = {
     "fertilize": 30,
     "prune":     60,
-    "repot":     365,
     "pest_check": 14,
 }
 _VALID_TYPES = set(_DEFAULT_INTERVALS.keys())
