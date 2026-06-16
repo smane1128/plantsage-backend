@@ -96,6 +96,7 @@ def create_care_task(request: CreateCareTaskRequest, db: Session = Depends(get_d
         plant_id=request.plant_id,
         task_type=request.task_type,
         interval_days=interval,
+        last_done_at=datetime.now(UTC).replace(tzinfo=None),
         notes=request.notes,
     )
     db.add(task)
@@ -177,12 +178,14 @@ def backfill_care_tasks(db: Session = Depends(get_db)):
             plant.plant_type
         )
 
+        now = datetime.now(UTC).replace(tzinfo=None)
         for task_type, interval_days in intervals.items():
             if task_type in missing:
                 db.add(CareTask(
                     plant_id=plant.id,
                     task_type=task_type,
                     interval_days=interval_days,
+                    last_done_at=now,
                 ))
                 created_count += 1
 

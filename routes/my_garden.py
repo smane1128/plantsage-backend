@@ -159,11 +159,13 @@ def add_to_my_garden(request: AddPlantRequest, db: Session = Depends(get_db)):
     details_json = scan.details if scan else None
     intervals = get_care_intervals(details_json, request.plant_type)
 
+    now = datetime.now(UTC).replace(tzinfo=None)
     for task_type, interval_days in intervals.items():
         db.add(CareTask(
             plant_id=plant.id,
             task_type=task_type,
             interval_days=interval_days,
+            last_done_at=now,
         ))
     db.commit()
 
