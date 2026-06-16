@@ -270,6 +270,83 @@ def identify_plant(image_base64: str, garden_profile: dict = None) -> dict:
     return result
 
 
+def identify_plant_multi(images: list[dict], garden_profile: dict = None) -> dict:
+    """
+    Multi-photo identification.
+    images: list of {"image_base64": str, "type": "leaf"|"stem"|"flower"}
+    Images are sorted so flower/fruit first (most diagnostic).
+    """
+    prompt = PLANT_PROMPT
+    if garden_profile:
+        garden_context = (
+            f"\n\nUser's garden conditions:\n"
+            f"- Location: {garden_profile.get('location', 'Unknown')}\n"
+            f"- Garden size: {garden_profile.get('garden_size', 'Unknown')}\n"
+            f"- Sunlight: {garden_profile.get('sunlight', 'Unknown')}\n"
+            f"- Soil type: {garden_profile.get('soil_type', 'Unknown')}\n"
+            f"- Water availability: {garden_profile.get('water_availability', 'Unknown')}\n"
+            f"\nTailor the suitability_score and recommendation to these specific garden conditions."
+        )
+        prompt = PLANT_PROMPT.replace(
+            "- Return ONLY the JSON, no extra text or markdown",
+            "- Return ONLY the JSON, no extra text or markdown" + garden_context
+        )
+
+    # Sort: flower first, then leaf, then stem (most to least diagnostic)
+    _type_order = {"flower": 0, "fruit": 0, "leaf": 1, "stem": 2}
+    sorted_images = sorted(images, key=lambda x: _type_order.get(x.get("type", "leaf"), 1))
+
+    photo_types = [img.get("type", "leaf") for img in sorted_images]
+    type_labels = {"flower": "Flower/Fruit", "fruit": "Flower/Fruit", "leaf": "Leaf", "stem": "Stem/Trunk"}
+    photos_desc = ", ".join(type_labels.get(t, t.capitalize()) for t in photo_types)
+
+    weighting_note = (
+        f"MULTI-PHOTO IDENTIFICATION: {len(sorted_images)} images provided ({photos_desc}). "
+        "Analyze ALL images together for maximum accuracy. "
+        "Identification weighting: Flower/Fruit images carry 50% weight, Leaf images 30%, Stem/Trunk 20%. "
+        "If a flower or fruit image is present, it should strongly dominate your identification decision. "
+        "Your image_features field MUST list features from ALL provided images combined.\n\n"
+    )
+
+    content = []
+    for img_data in sorted_images:
+        img_b64 = img_data["image_base64"]
+        img_type = img_data.get("type", "leaf")
+        image_bytes = base64.b64decode(img_b64)
+        mime = _detect_mime(image_bytes)
+        label = type_labels.get(img_type, img_type.capitalize())
+        content.append({
+            "type": "text",
+            "text": f"[Image: {label}]",
+        })
+        content.append({
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:{mime};base64,{img_b64}",
+                "detail": "high",
+            },
+        })
+
+    content.append({"type": "text", "text": weighting_note + prompt})
+
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": content}],
+        max_tokens=2500,
+        temperature=0,
+    )
+
+    raw = response.choices[0].message.content.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+
+    result = json.loads(raw)
+    _enforce_confidence(result)
+    return result
+
+
 def _enforce_confidence(result: dict) -> None:
     """
     Server-side enforcement of confidence rules:

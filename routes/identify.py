@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from database.db import get_db
 from models.scan import ScanHistory
 from models.garden_profile import GardenProfile
-from services.openai_service import identify_plant, quick_get_scientific_name
+from services.openai_service import identify_plant, identify_plant_multi, quick_get_scientific_name
 from services.pricing_service import generate_nursery_price
 from services.recommendation_service import get_similar_plants, get_similar_flowers, get_malaysia_alternatives
 from services.pet_safety_service import lookup_pet_safety
@@ -439,22 +439,44 @@ def _inject_cultivation_category(result: dict, from_cache: bool = False) -> str:
     return category
 
 
-class ImageRequest(BaseModel):
+class AdditionalImage(BaseModel):
     image: str        # base64 encoded image
+    type: str = "leaf"  # leaf | stem | flower
+
+
+class ImageRequest(BaseModel):
+    image: str = ""       # base64 encoded primary image (single-photo, backward compat)
     image_path: str = ""   # local file path saved by Flutter
     force_rescan: bool = False  # bypass cache and call AI fresh
+    additional_images: list[AdditionalImage] = []  # extra typed photos for multi-photo scan
 
 
 @router.post("/identify")
 def identify(request: ImageRequest, db: Session = Depends(get_db)):
-    if not request.image:
+    if not request.image and not request.additional_images:
         raise HTTPException(status_code=400, detail="Image is required")
     check_ai_rate_limit()
+
+    # Build unified image list for multi-photo flow
+    all_images: list[dict] = []
+    if request.additional_images:
+        all_images = [{"image_base64": img.image, "type": img.type} for img in request.additional_images]
+        if request.image and not any(img.image == request.image for img in request.additional_images):
+            all_images.insert(0, {"image_base64": request.image, "type": "leaf"})
+    elif request.image:
+        all_images = [{"image_base64": request.image, "type": "leaf"}]
+
+    is_multi = len(all_images) > 1
+    # Primary image used for quick pre-check and cache storage
+    primary_image = request.image or (all_images[0]["image_base64"] if all_images else "")
 
     now = datetime.now(timezone.utc)
 
     # ── Step 1: Cheap pre-check — get scientific name only (skips full AI if cached) ──
-    sci_name_quick = quick_get_scientific_name(request.image)
+    # Use flower image for pre-check if available (most diagnostic)
+    flower_images = [img for img in all_images if img["type"] in ("flower", "fruit")]
+    precheck_image = flower_images[0]["image_base64"] if flower_images else primary_image
+    sci_name_quick = quick_get_scientific_name(precheck_image)
     if sci_name_quick and not request.force_rescan:
         cached = db.query(ScanHistory).filter(
             ScanHistory.scientific_name.ilike(sci_name_quick)
@@ -542,7 +564,10 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
         }
 
     try:
-        result = identify_plant(request.image, garden_profile=garden_profile)
+        if is_multi:
+            result = identify_plant_multi(all_images, garden_profile=garden_profile)
+        else:
+            result = identify_plant(primary_image, garden_profile=garden_profile)
     except RateLimitError:
         raise HTTPException(status_code=402, detail="OpenAI quota exceeded. Please add credits at platform.openai.com/settings/billing")
     except AuthenticationError:
@@ -673,6 +698,12 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
             "confidence": "Estimated",
         }
     result["display_mode"] = get_display_mode(result)
+    # Attach evidence metadata for multi-photo scans
+    if is_multi:
+        result["_evidence"] = {
+            "photos": [img["type"] for img in all_images],
+            "count": len(all_images),
+        }
     return result
 
 
