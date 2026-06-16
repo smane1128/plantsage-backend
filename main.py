@@ -91,6 +91,7 @@ with engine.connect() as _conn:
             notes         TEXT
         )""",
         "CREATE INDEX IF NOT EXISTS idx_care_tasks_plant_id ON care_tasks(plant_id)",
+        "ALTER TABLE care_tasks ADD COLUMN schedule_source VARCHAR(20) DEFAULT NULL",
     ]:
         try:
             _conn.execute(text(_sql))
