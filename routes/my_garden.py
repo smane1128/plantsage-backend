@@ -10,6 +10,8 @@ from models.my_garden import MyGarden
 from models.scan import ScanHistory
 from models.watering_history import WateringHistory
 from models.disease_scan import DiseaseScan
+from models.care_task import CareTask
+from services.care_schedule_service import get_care_intervals
 from datetime import datetime, UTC, timedelta
 
 router = APIRouter(prefix="/my-garden", tags=["my-garden"])
@@ -141,6 +143,30 @@ def add_to_my_garden(request: AddPlantRequest, db: Session = Depends(get_db)):
     db.add(plant)
     db.commit()
     db.refresh(plant)
+
+    # ── Auto-create care task schedules ──────────────────────────────────────
+    # Look up AI details JSON from scan_history for this plant
+    scan = None
+    if request.scientific_name:
+        scan = db.query(ScanHistory).filter(
+            ScanHistory.scientific_name.ilike(request.scientific_name)
+        ).first()
+    if scan is None and request.plant_name:
+        scan = db.query(ScanHistory).filter(
+            ScanHistory.plant_name.ilike(request.plant_name)
+        ).first()
+
+    details_json = scan.details if scan else None
+    intervals = get_care_intervals(details_json, request.plant_type)
+
+    for task_type, interval_days in intervals.items():
+        db.add(CareTask(
+            plant_id=plant.id,
+            task_type=task_type,
+            interval_days=interval_days,
+        ))
+    db.commit()
+
     label = plant.garden_name or plant.plant_name
     return {"id": plant.id, "message": f"'{label}' added to your garden!"}
 

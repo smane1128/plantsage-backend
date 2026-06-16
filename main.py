@@ -9,6 +9,7 @@ from routes.stats import router as stats_router
 from routes.diagnose import router as diagnose_router
 from routes.compare import router as compare_router
 from routes.reset import router as reset_router
+from routes.care_tasks import router as care_tasks_router
 from database.db import engine, Base
 from sqlalchemy import text
 import models.garden_profile    # ensure table is registered
@@ -16,6 +17,7 @@ import models.my_garden          # ensure table is registered
 import models.wishlist           # ensure table is registered
 import models.watering_history   # ensure table is registered
 import models.disease_scan       # ensure table is registered
+import models.care_task          # ensure table is registered
 
 Base.metadata.create_all(bind=engine)
 
@@ -79,6 +81,16 @@ with engine.connect() as _conn:
         # FK indexes for query performance
         "CREATE INDEX IF NOT EXISTS idx_watering_history_plant_id ON watering_history(plant_id)",
         "CREATE INDEX IF NOT EXISTS idx_disease_scans_plant_id ON disease_scans(plant_id)",
+        # Care tasks table
+        """CREATE TABLE IF NOT EXISTS care_tasks (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            plant_id      INTEGER NOT NULL REFERENCES my_garden(id) ON DELETE CASCADE,
+            task_type     TEXT NOT NULL,
+            interval_days INTEGER NOT NULL,
+            last_done_at  DATETIME,
+            notes         TEXT
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_care_tasks_plant_id ON care_tasks(plant_id)",
     ]:
         try:
             _conn.execute(text(_sql))
@@ -105,6 +117,7 @@ app.include_router(stats_router)
 app.include_router(diagnose_router)
 app.include_router(compare_router)
 app.include_router(reset_router)
+app.include_router(care_tasks_router)
 
 
 @app.get("/")
