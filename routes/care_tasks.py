@@ -140,6 +140,17 @@ def delete_care_task(task_id: int, db: Session = Depends(get_db)):
     return {"message": "Care task schedule removed."}
 
 
+@router.post("/fix-nulls")
+def fix_null_last_done(db: Session = Depends(get_db)):
+    """Patch any care tasks with last_done_at=NULL to today, so they aren't shown as overdue."""
+    now = datetime.now(UTC).replace(tzinfo=None)
+    tasks = db.query(CareTask).filter(CareTask.last_done_at == None).all()  # noqa: E711
+    for t in tasks:
+        t.last_done_at = now
+    db.commit()
+    return {"message": f"Patched {len(tasks)} tasks.", "count": len(tasks)}
+
+
 @router.post("/backfill")
 def backfill_care_tasks(db: Session = Depends(get_db)):
     """
