@@ -292,18 +292,26 @@ def identify_plant_multi(images: list[dict], garden_profile: dict = None) -> dic
             "- Return ONLY the JSON, no extra text or markdown" + garden_context
         )
 
-    # Sort: flower first, then leaf, then stem (most to least diagnostic)
-    _type_order = {"flower": 0, "fruit": 0, "leaf": 1, "stem": 2}
-    sorted_images = sorted(images, key=lambda x: _type_order.get(x.get("type", "leaf"), 1))
+    # Sort: flower first, then whole_plant/leaf, then leaf_stem (most to least diagnostic)
+    _type_order = {"flower": 0, "fruit": 0, "whole_plant": 1, "leaf": 1, "leaf_stem": 2, "stem": 2}
+    sorted_images = sorted(images, key=lambda x: _type_order.get(x.get("type", "whole_plant"), 1))
 
-    photo_types = [img.get("type", "leaf") for img in sorted_images]
-    type_labels = {"flower": "Flower/Fruit", "fruit": "Flower/Fruit", "leaf": "Leaf", "stem": "Stem/Trunk"}
+    photo_types = [img.get("type", "whole_plant") for img in sorted_images]
+    type_labels = {
+        "whole_plant": "Whole Plant",
+        "flower": "Flower/Fruit",
+        "fruit": "Flower/Fruit",
+        "leaf": "Leaf",
+        "leaf_stem": "Leaf & Stem",
+        "stem": "Stem/Trunk",
+    }
     photos_desc = ", ".join(type_labels.get(t, t.capitalize()) for t in photo_types)
 
     weighting_note = (
         f"MULTI-PHOTO IDENTIFICATION: {len(sorted_images)} images provided ({photos_desc}). "
         "Analyze ALL images together for maximum accuracy. "
-        "Identification weighting: Flower/Fruit images carry 50% weight, Leaf images 30%, Stem/Trunk 20%. "
+        "The Whole Plant image gives overall context (growth form, leaf arrangement, size). "
+        "Identification weighting: Flower/Fruit 50%, Whole Plant/Leaf 30%, Leaf & Stem detail 20%. "
         "If a flower or fruit image is present, it should strongly dominate your identification decision. "
         "Your image_features field MUST list features from ALL provided images combined.\n\n"
     )

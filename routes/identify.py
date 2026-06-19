@@ -462,9 +462,9 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
     if request.additional_images:
         all_images = [{"image_base64": img.image, "type": img.type} for img in request.additional_images]
         if request.image and not any(img.image == request.image for img in request.additional_images):
-            all_images.insert(0, {"image_base64": request.image, "type": "leaf"})
+            all_images.insert(0, {"image_base64": request.image, "type": "whole_plant"})
     elif request.image:
-        all_images = [{"image_base64": request.image, "type": "leaf"}]
+        all_images = [{"image_base64": request.image, "type": "whole_plant"}]
 
     is_multi = len(all_images) > 1
     # Primary image used for quick pre-check and cache storage
