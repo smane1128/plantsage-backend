@@ -190,6 +190,15 @@ _SPECIES_DATA: list[dict[str, Any]] = [
         "tasks": {"fertilize": 30, "prune": 365, "pest_check": 21},
     },
     {
+        # Adenium — drought-tolerant succulent; overwatering is the #1 killer
+        "scientific": ["adenium obesum", "adenium arabicum", "adenium"],
+        "common":     ["desert rose", "adenium", "impala lily", "mock azalea"],
+        "lifespan_days": None,
+        "watering_days": 10,   # water every 10 days; let soil dry fully between watering
+        "tasks": {"fertilize": 30, "pest_check": 14},
+        # No prune task — only light shaping after flowering, not calendar-driven
+    },
+    {
         "scientific": ["ixora coccinea", "ixora"],
         "common":     ["ixora", "jungle geranium", "bunga jejarum"],
         "lifespan_days": None,

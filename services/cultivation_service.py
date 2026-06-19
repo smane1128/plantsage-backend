@@ -50,6 +50,34 @@ _BOTANICAL_ONLY_COMMON_NAMES: set[str] = {
     "victoria water lily",
     "welwitschia",
     "corpse lily",              # common name for Rafflesia
+    # Temperate bulbs — not for Malaysian home gardens
+    "tulip",
+    "daffodil",
+    "narcissus flower",
+    "hyacinth",
+    "grape hyacinth",
+    "crocus",
+    "peony",
+    "delphinium",
+    "freesia",
+}
+
+# Temperate-climate-only plants — require cold dormancy impossible in Malaysia.
+# Commercially sold as cut flowers or novelties but will NOT grow or bloom at home.
+# Treated as botanical_only: score ≤ 5, Not Recommended, malaysia_suitable=False.
+_TEMPERATE_INCOMPATIBLE_GENERA: set[str] = {
+    "tulipa",       # tulips — require 8–16 weeks cold (2–7°C) to bloom
+    "narcissus",    # daffodils, jonquils — require chilling period
+    "hyacinthus",   # hyacinths — require cold dormancy
+    "crocus",       # crocuses — require cool winters to flower
+    "muscari",      # grape hyacinths — require cool period
+    "freesia",      # freesias — require cool conditions (10–15°C) to flower
+    "ranunculus",   # persian buttercup — cool growing season
+    "paeonia",      # peonies — need 6 weeks below 4°C  
+    "delphinium",   # delphiniums — cool-climate only
+    "aconitum",     # monkshood — cool temperate
+    "gentiana",     # gentians — alpine / cool temperate
+    "primula",      # primrose — cool/temperate; brief pot novelty only
 }
 
 # Keywords in description / plant name that strongly imply botanical-only status.
@@ -403,6 +431,11 @@ def get_cultivation_category(
     # ── 1. Botanical-only: genus ──────────────────────────────────────────────
     if genus and genus in _BOTANICAL_ONLY_GENERA:
         print(f"[cultivation] → botanical_only (genus match: {genus!r})")
+        return "botanical_only"
+
+    # ── 1b. Temperate-incompatible: requires cold dormancy — not viable in Malaysia
+    if genus and genus in _TEMPERATE_INCOMPATIBLE_GENERA:
+        print(f"[cultivation] → botanical_only (temperate-incompatible genus: {genus!r})")
         return "botanical_only"
 
     # ── 2. Botanical-only: exact species ─────────────────────────────────────
