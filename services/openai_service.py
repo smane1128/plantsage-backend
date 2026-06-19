@@ -383,6 +383,30 @@ def _enforce_confidence(result: dict) -> None:
         )
     )
 
+    # Plants identified reliably by leaf alone — do NOT apply leaf-only cap
+    # These species have unique enough foliage that confidence from leaves is valid.
+    _LEAF_IDENTIFIABLE = (
+        "monstera", "sansevieria", "dracaena trifasciata", "snake plant",
+        "zamioculcas", "zz plant", "calathea", "maranta", "aglaonema",
+        "anthurium", "bird of paradise", "strelitzia", "banana", "musa",
+        "heliconia", "pandanus", "pandan", "aloe", "cactus", "succulent",
+        "echeveria", "euphorbia tirucalli", "bamboo", "cycas", "sago palm",
+        "lotus", "water lily", "nymphaea", "nelumbo",
+    )
+    is_leaf_identifiable = any(
+        k in plant_name_lower or k in sci_name_lower
+        for k in _LEAF_IDENTIFIABLE
+    )
+    # Also skip cap if AI reported distinctive visible features
+    _DISTINCTIVE_KEYWORDS = (
+        "fenestrat", "variegat", "distinctive", "unique", "unmistakable",
+        "rosette", "succulent", "spines", "thorns", "striped", "banded",
+        "sword-shaped", "strap-shaped", "paddle-shaped", "pinnate",
+    )
+    has_distinctive = any(kw in features_str for kw in _DISTINCTIVE_KEYWORDS)
+    if is_leaf_identifiable or has_distinctive:
+        is_leaf_only = False
+
     # Detect confusable tropical fruit tree genera
     plant_name_lower = (ident.get("plant_name") or "").lower()
     sci_name_lower = (ident.get("scientific_name") or "").lower()
@@ -438,6 +462,13 @@ def _enforce_confidence(result: dict) -> None:
     # Ensure possible_matches always exists
     if "possible_matches" not in result:
         result["possible_matches"] = []
+
+    # Cap possible_matches confidence so no alternative ever exceeds the primary
+    # (prevents contradictory "Primary: 60%, Possible match: Rose 92%" scenarios)
+    for match in result.get("possible_matches", []):
+        if isinstance(match, dict) and isinstance(match.get("confidence"), (int, float)):
+            if match["confidence"] >= confidence:
+                match["confidence"] = max(confidence - 5, 1)
 
 
 # ── Disease Diagnosis ─────────────────────────────────────────────────────────

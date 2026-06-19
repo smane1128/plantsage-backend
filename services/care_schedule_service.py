@@ -285,6 +285,115 @@ _SPECIES_DATA: list[dict[str, Any]] = [
         "watering_days": 7,
         "tasks": {"fertilize": 30, "prune": 60, "pest_check": 21},
     },
+
+    # ── Orchids ──────────────────────────────────────────────────────────────
+    {
+        "scientific": ["dendrobium", "phalaenopsis", "vanda", "oncidium", "cattleya",
+                       "dendrobium phalaenopsis", "dendrobium hybrid"],
+        "common":     ["orchid", "dendrobium", "moth orchid", "vanda orchid",
+                       "dancing lady orchid", "anggrek"],
+        "lifespan_days": None,
+        "watering_days": 7,
+        "tasks": {"fertilize": 14, "pest_check": 21},
+        # prune: not applicable — remove spent flower spikes only when brown
+    },
+
+    # ── Flowering shrubs (gaps) ───────────────────────────────────────────────
+    {
+        "scientific": ["gardenia jasminoides", "gardenia augusta", "gardenia"],
+        "common":     ["gardenia", "cape jasmine"],
+        "lifespan_days": None,
+        "watering_days": 3,
+        "tasks": {"fertilize": 21, "prune": 60, "pest_check": 14},
+    },
+
+    # ── Tropical fruits & edibles ─────────────────────────────────────────────
+    {
+        "scientific": ["musa paradisiaca", "musa acuminata", "musa balbisiana", "musa"],
+        "common":     ["banana", "pisang", "banana tree"],
+        "lifespan_days": None,
+        "watering_days": 3,
+        "tasks": {"fertilize": 21, "pest_check": 14},
+        # prune: remove dead/yellowed leaves and spent suckers as needed
+    },
+    {
+        "scientific": ["mangifera indica"],
+        "common":     ["mango", "mangga"],
+        "lifespan_days": None,
+        "watering_days": 5,
+        "tasks": {"fertilize": 30, "prune": 365, "pest_check": 21},
+    },
+    {
+        "scientific": ["carica papaya"],
+        "common":     ["papaya", "betik", "papaw"],
+        "lifespan_days": 730,
+        "watering_days": 3,
+        "tasks": {"fertilize": 21, "pest_check": 14},
+    },
+    {
+        "scientific": ["psidium guajava"],
+        "common":     ["guava", "jambu batu", "jambu"],
+        "lifespan_days": None,
+        "watering_days": 4,
+        "tasks": {"fertilize": 30, "prune": 90, "pest_check": 21},
+    },
+    {
+        "scientific": ["averrhoa carambola"],
+        "common":     ["starfruit", "star fruit", "belimbing"],
+        "lifespan_days": None,
+        "watering_days": 4,
+        "tasks": {"fertilize": 30, "prune": 180, "pest_check": 21},
+    },
+    {
+        "scientific": ["ananas comosus"],
+        "common":     ["pineapple", "nanas"],
+        "lifespan_days": 730,
+        "watering_days": 5,
+        "tasks": {"fertilize": 30, "pest_check": 21},
+    },
+
+    # ── Ginger family ─────────────────────────────────────────────────────────
+    {
+        "scientific": ["zingiber officinale"],
+        "common":     ["ginger", "halia"],
+        "lifespan_days": 365,
+        "watering_days": 3,
+        "tasks": {"fertilize": 30, "pest_check": 30},
+    },
+    {
+        "scientific": ["curcuma longa"],
+        "common":     ["turmeric", "kunyit"],
+        "lifespan_days": 365,
+        "watering_days": 3,
+        "tasks": {"fertilize": 30, "pest_check": 30},
+    },
+    {
+        "scientific": ["etlingera elatior"],
+        "common":     ["torch ginger", "bunga kantan"],
+        "lifespan_days": None,
+        "watering_days": 3,
+        "tasks": {"fertilize": 30, "prune": 60, "pest_check": 21},
+    },
+    {
+        "scientific": ["alpinia purpurata", "alpinia galanga"],
+        "common":     ["red ginger", "galangal", "lengkuas"],
+        "lifespan_days": None,
+        "watering_days": 3,
+        "tasks": {"fertilize": 30, "prune": 60, "pest_check": 21},
+    },
+
+    # ── Palms ─────────────────────────────────────────────────────────────────
+    {
+        "scientific": ["chrysalidocarpus lutescens", "dypsis lutescens",
+                       "areca catechu", "cocos nucifera", "livistona chinensis",
+                       "roystonea regia", "wodyetia bifurcata"],
+        "common":     ["areca palm", "golden cane palm", "coconut palm", "coconut",
+                       "fan palm", "foxtail palm", "kelapa", "pinang"],
+        "lifespan_days": None,
+        "watering_days": 4,
+        "tasks": {"fertilize": 60, "pest_check": 30},
+        # prune: remove dead fronds only when fully brown
+    },
 ]
 
 # Build O(1) lookup dicts

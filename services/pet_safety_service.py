@@ -584,6 +584,97 @@ _SAFETY: dict[str, dict] = {
         "affected_animals": "Cats, Dogs",
         "symptoms": "Calcium oxalate crystals — oral and GI irritation, drooling.",
     },
+
+    # ── Alocasia / Giant Taro / Elephant Ear ────────────────────────────────
+    "alocasia": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "Calcium oxalate crystals — intense oral and GI irritation, drooling, swelling of mouth/throat if chewed.",
+    },
+    "alocasia macrorrhizos": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "Calcium oxalate crystals — intense oral and GI irritation, drooling, swelling of mouth/throat if chewed.",
+    },
+    "alocasia odora": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "Calcium oxalate crystals — oral irritation, drooling, vomiting.",
+    },
+    "alocasia amazonica": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "Calcium oxalate crystals — oral irritation, drooling, vomiting.",
+    },
+
+    # ── Cordyline / Ti Plant ─────────────────────────────────────────────────
+    "cordyline": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "Saponins — vomiting (possibly with blood), depression, loss of appetite. More pronounced in cats.",
+    },
+    "cordyline fruticosa": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "Saponins — vomiting (possibly with blood), depression, loss of appetite. More pronounced in cats.",
+    },
+    "cordyline terminalis": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "Saponins — vomiting (possibly with blood), depression, loss of appetite.",
+    },
+
+    # ── Canna Lily ───────────────────────────────────────────────────────────
+    "canna": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "canna indica": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "canna generalis": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+
+    # ── Ginger family ────────────────────────────────────────────────────────
+    "zingiber": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "zingiber officinale": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "curcuma": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "curcuma longa": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "alpinia": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "alpinia purpurata": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "alpinia galanga": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "etlingera": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "etlingera elatior": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
 }
 
 # ─── Common name aliases → scientific name (lowercase) ───────────────────────
@@ -701,6 +792,30 @@ _ALIASES: dict[str, str] = {
     "money plant":           "epipremnum aureum",
     "rubber plant":          "ficus elastica",
     "jade plant":            "crassula ovata",
+    # Alocasia
+    "alocasia":              "alocasia macrorrhizos",
+    "giant taro":            "alocasia macrorrhizos",
+    "giant elephant ear":    "alocasia macrorrhizos",
+    "african mask":          "alocasia amazonica",
+    "jewel alocasia":        "alocasia amazonica",
+    # Cordyline
+    "ti plant":              "cordyline fruticosa",
+    "good luck plant":       "cordyline fruticosa",
+    "red ti":                "cordyline fruticosa",
+    "cordyline":             "cordyline fruticosa",
+    # Canna
+    "canna lily":            "canna indica",
+    "canna":                 "canna indica",
+    # Ginger family
+    "ginger":                "zingiber officinale",
+    "halia":                 "zingiber officinale",
+    "turmeric":              "curcuma longa",
+    "kunyit":                "curcuma longa",
+    "torch ginger":          "etlingera elatior",
+    "bunga kantan":          "etlingera elatior",
+    "galangal":              "alpinia galanga",
+    "lengkuas":              "alpinia galanga",
+    "red ginger":            "alpinia purpurata",
 }
 
 
