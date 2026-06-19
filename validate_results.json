@@ -1,0 +1,783 @@
+{
+  "passed": 95,
+  "failed": 2,
+  "total": 97,
+  "results": [
+    {
+      "category": "Pet Safety",
+      "test": "Hibiscus",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Safe for cats and dogs. May cause mild stomach upset if eate"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Torch Ginger",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Non-toxic to cats and dogs."
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Turmeric",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Non-toxic to cats and dogs."
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Ginger",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Non-toxic to cats and dogs."
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Alocasia",
+      "status": "PASS",
+      "expected": "status=caution source=database",
+      "actual": "status=caution source=database",
+      "note": "Calcium oxalate crystals \u2014 intense oral and GI irritation, d"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Monstera",
+      "status": "PASS",
+      "expected": "status=caution source=database",
+      "actual": "status=caution source=database",
+      "note": "Calcium oxalate crystals \u2014 intense oral irritation, drooling"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Snake Plant",
+      "status": "PASS",
+      "expected": "status=caution source=database",
+      "actual": "status=caution source=database",
+      "note": "Nausea, vomiting, drooling (saponins)"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Cordyline/Ti",
+      "status": "PASS",
+      "expected": "status=caution source=database",
+      "actual": "status=caution source=database",
+      "note": "Saponins \u2014 vomiting (possibly with blood), depression, loss "
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Canna Lily",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Non-toxic to cats and dogs."
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Oleander",
+      "status": "PASS",
+      "expected": "status=toxic source=database",
+      "actual": "status=toxic source=database",
+      "note": "Cardiac arrhythmia, vomiting, drooling \u2014 all parts toxic; ve"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Lantana",
+      "status": "PASS",
+      "expected": "status=toxic source=database",
+      "actual": "status=toxic source=database",
+      "note": "Liver damage, photosensitivity, lethargy \u2014 berries especiall"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Sago Palm",
+      "status": "PASS",
+      "expected": "status=toxic source=database",
+      "actual": "status=toxic source=database",
+      "note": "Cycasin toxin \u2014 severe liver failure, neurological damage, s"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Pothos",
+      "status": "PASS",
+      "expected": "status=caution source=database",
+      "actual": "status=caution source=database",
+      "note": "Oral irritation, drooling, vomiting (calcium oxalate crystal"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Desert Rose",
+      "status": "PASS",
+      "expected": "status=toxic source=database",
+      "actual": "status=toxic source=database",
+      "note": "Cardiac glycosides \u2014 heart rhythm disturbances, vomiting; al"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "Allamanda",
+      "status": "PASS",
+      "expected": "status=toxic source=database",
+      "actual": "status=toxic source=database",
+      "note": "May cause vomiting and stomach irritation if ingested. All p"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "torch ginger",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Non-toxic to cats and dogs."
+    },
+    {
+      "category": "Pet Safety",
+      "test": "turmeric",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Non-toxic to cats and dogs."
+    },
+    {
+      "category": "Pet Safety",
+      "test": "ginger",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Non-toxic to cats and dogs."
+    },
+    {
+      "category": "Pet Safety",
+      "test": "alocasia",
+      "status": "PASS",
+      "expected": "status=caution source=database",
+      "actual": "status=caution source=database",
+      "note": "Calcium oxalate crystals \u2014 intense oral and GI irritation, d"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "ti plant",
+      "status": "PASS",
+      "expected": "status=caution source=database",
+      "actual": "status=caution source=database",
+      "note": "Saponins \u2014 vomiting (possibly with blood), depression, loss "
+    },
+    {
+      "category": "Pet Safety",
+      "test": "bunga kantan",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Non-toxic to cats and dogs."
+    },
+    {
+      "category": "Pet Safety",
+      "test": "kunyit",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Non-toxic to cats and dogs."
+    },
+    {
+      "category": "Pet Safety",
+      "test": "halia",
+      "status": "PASS",
+      "expected": "status=safe source=database",
+      "actual": "status=safe source=database",
+      "note": "Non-toxic to cats and dogs."
+    },
+    {
+      "category": "Pet Safety",
+      "test": "sago palm",
+      "status": "PASS",
+      "expected": "status=toxic source=database",
+      "actual": "status=toxic source=database",
+      "note": "Cycasin toxin \u2014 severe liver failure, neurological damage, s"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "desert rose",
+      "status": "PASS",
+      "expected": "status=toxic source=database",
+      "actual": "status=toxic source=database",
+      "note": "Cardiac glycosides \u2014 heart rhythm disturbances, vomiting; al"
+    },
+    {
+      "category": "Pet Safety",
+      "test": "lantana",
+      "status": "PASS",
+      "expected": "status=toxic source=database",
+      "actual": "status=toxic source=database",
+      "note": "Liver damage, photosensitivity, lethargy \u2014 berries especiall"
+    },
+    {
+      "category": "Confidence",
+      "test": "Monstera (no cap expected)",
+      "status": "PASS",
+      "expected": "90",
+      "actual": "90",
+      "note": ""
+    },
+    {
+      "category": "Confidence",
+      "test": "Snake Plant (no cap expected)",
+      "status": "PASS",
+      "expected": "85",
+      "actual": "85",
+      "note": ""
+    },
+    {
+      "category": "Confidence",
+      "test": "ZZ Plant (no cap expected)",
+      "status": "PASS",
+      "expected": "82",
+      "actual": "82",
+      "note": ""
+    },
+    {
+      "category": "Confidence",
+      "test": "Pandan (no cap expected)",
+      "status": "PASS",
+      "expected": "88",
+      "actual": "88",
+      "note": ""
+    },
+    {
+      "category": "Confidence",
+      "test": "Lotus (no cap expected)",
+      "status": "PASS",
+      "expected": "87",
+      "actual": "87",
+      "note": ""
+    },
+    {
+      "category": "Confidence",
+      "test": "Syzygium sp. (cap expected)",
+      "status": "PASS",
+      "expected": "\u226460",
+      "actual": "60",
+      "note": ""
+    },
+    {
+      "category": "Confidence",
+      "test": "Guava (cap expected)",
+      "status": "PASS",
+      "expected": "\u226460",
+      "actual": "60",
+      "note": ""
+    },
+    {
+      "category": "Confidence",
+      "test": "Unknown shrub (cap expected)",
+      "status": "PASS",
+      "expected": "\u226470",
+      "actual": "70",
+      "note": ""
+    },
+    {
+      "category": "Confidence",
+      "test": "PossibleMatch 'Water Apple' < primary(60)",
+      "status": "PASS",
+      "expected": "<60",
+      "actual": "55",
+      "note": ""
+    },
+    {
+      "category": "Confidence",
+      "test": "PossibleMatch 'Jambu Air' < primary(60)",
+      "status": "PASS",
+      "expected": "<60",
+      "actual": "55",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Mango source=species_specific",
+      "status": "PASS",
+      "expected": "species_specific",
+      "actual": "species_specific",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Mango watering>0",
+      "status": "PASS",
+      "expected": ">0",
+      "actual": "5",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Mango has fertilize",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "30d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Mango has prune",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "365d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Mango has pest_check",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "21d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Banana source=species_specific",
+      "status": "PASS",
+      "expected": "species_specific",
+      "actual": "species_specific",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Banana watering>0",
+      "status": "PASS",
+      "expected": ">0",
+      "actual": "3",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Banana has fertilize",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "21d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Banana has pest_check",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "14d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Banana no prune (correct)",
+      "status": "PASS",
+      "expected": "absent/None",
+      "actual": "None",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Orchid source=species_specific",
+      "status": "PASS",
+      "expected": "species_specific",
+      "actual": "species_specific",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Orchid watering>0",
+      "status": "PASS",
+      "expected": ">0",
+      "actual": "7",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Orchid has fertilize",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "14d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Orchid has pest_check",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "21d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Orchid no prune (correct)",
+      "status": "PASS",
+      "expected": "absent/None",
+      "actual": "None",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Turmeric source=species_specific",
+      "status": "PASS",
+      "expected": "species_specific",
+      "actual": "species_specific",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Turmeric watering>0",
+      "status": "PASS",
+      "expected": ">0",
+      "actual": "3",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Turmeric has fertilize",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "30d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Turmeric has pest_check",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "30d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Turmeric no prune (correct)",
+      "status": "PASS",
+      "expected": "absent/None",
+      "actual": "None",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Torch Ginger source=species_specific",
+      "status": "PASS",
+      "expected": "species_specific",
+      "actual": "species_specific",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Torch Ginger watering>0",
+      "status": "PASS",
+      "expected": ">0",
+      "actual": "3",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Torch Ginger has fertilize",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "30d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Torch Ginger has prune",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "60d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Torch Ginger has pest_check",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "21d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Guava source=species_specific",
+      "status": "PASS",
+      "expected": "species_specific",
+      "actual": "species_specific",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Guava watering>0",
+      "status": "PASS",
+      "expected": ">0",
+      "actual": "4",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Guava has fertilize",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "30d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Guava has prune",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "90d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Guava has pest_check",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "21d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Rose source=species_specific",
+      "status": "PASS",
+      "expected": "species_specific",
+      "actual": "species_specific",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Rose watering>0",
+      "status": "PASS",
+      "expected": ">0",
+      "actual": "3",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Rose has fertilize",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "21d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Rose has prune",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "30d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Rose has pest_check",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "7d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Hibiscus source=species_specific",
+      "status": "PASS",
+      "expected": "species_specific",
+      "actual": "species_specific",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Hibiscus watering>0",
+      "status": "PASS",
+      "expected": ">0",
+      "actual": "3",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Hibiscus has fertilize",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "21d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Hibiscus has prune",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "45d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Hibiscus has pest_check",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "14d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Sunflower source=species_specific",
+      "status": "PASS",
+      "expected": "species_specific",
+      "actual": "species_specific",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Sunflower watering>0",
+      "status": "PASS",
+      "expected": ">0",
+      "actual": "3",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Sunflower has fertilize",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "21d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Sunflower has pest_check",
+      "status": "PASS",
+      "expected": "present",
+      "actual": "14d",
+      "note": ""
+    },
+    {
+      "category": "Care Schedule",
+      "test": "Sunflower no prune (correct)",
+      "status": "PASS",
+      "expected": "absent/None",
+      "actual": "None",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Hibiscus category=common_garden",
+      "status": "PASS",
+      "expected": "common_garden",
+      "actual": "common_garden",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Hibiscus score 56-100",
+      "status": "PASS",
+      "expected": "56-100",
+      "actual": "85",
+      "note": "Highly Recommended"
+    },
+    {
+      "category": "Regression",
+      "test": "Rose category=common_garden",
+      "status": "PASS",
+      "expected": "common_garden",
+      "actual": "common_garden",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Rose score 56-100",
+      "status": "PASS",
+      "expected": "56-100",
+      "actual": "85",
+      "note": "Highly Recommended"
+    },
+    {
+      "category": "Regression",
+      "test": "Monstera category=common_garden",
+      "status": "PASS",
+      "expected": "common_garden",
+      "actual": "common_garden",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Monstera score 56-100",
+      "status": "PASS",
+      "expected": "56-100",
+      "actual": "85",
+      "note": "Highly Recommended"
+    },
+    {
+      "category": "Regression",
+      "test": "Rafflesia category=botanical_only",
+      "status": "PASS",
+      "expected": "botanical_only",
+      "actual": "botanical_only",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Rafflesia score 0-20",
+      "status": "PASS",
+      "expected": "0-20",
+      "actual": "5",
+      "note": "Botanical Only"
+    },
+    {
+      "category": "Regression",
+      "test": "Tulip category=botanical_only",
+      "status": "FAIL",
+      "expected": "botanical_only",
+      "actual": "common_garden",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Tulip score 0-20",
+      "status": "FAIL",
+      "expected": "0-20",
+      "actual": "85",
+      "note": "Highly Recommended"
+    },
+    {
+      "category": "Regression",
+      "test": "Pet regression: Oleander",
+      "status": "PASS",
+      "expected": "toxic",
+      "actual": "toxic",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Pet regression: Hibiscus",
+      "status": "PASS",
+      "expected": "safe",
+      "actual": "safe",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Pet regression: Pothos",
+      "status": "PASS",
+      "expected": "caution",
+      "actual": "caution",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Care regression: Rose has fertilize",
+      "status": "PASS",
+      "expected": "",
+      "actual": "",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Care regression: Sunflower has fertilize",
+      "status": "PASS",
+      "expected": "",
+      "actual": "",
+      "note": ""
+    },
+    {
+      "category": "Regression",
+      "test": "Care regression: Pothos has fertilize",
+      "status": "PASS",
+      "expected": "",
+      "actual": "",
+      "note": ""
+    }
+  ]
+}

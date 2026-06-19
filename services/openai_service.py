@@ -373,6 +373,11 @@ def _enforce_confidence(result: dict) -> None:
 
     # Detect leaf-only scenarios
     features_str = " ".join(str(f).lower() for f in image_features)
+
+    # Detect confusable tropical fruit tree genera (defined early — used in both whitelist + confusable checks)
+    plant_name_lower = (ident.get("plant_name") or "").lower()
+    sci_name_lower = (ident.get("scientific_name") or "").lower()
+
     is_leaf_only = (
         ("leaves only" in features_str or "leaf only" in features_str)
         or (
@@ -407,9 +412,6 @@ def _enforce_confidence(result: dict) -> None:
     if is_leaf_identifiable or has_distinctive:
         is_leaf_only = False
 
-    # Detect confusable tropical fruit tree genera
-    plant_name_lower = (ident.get("plant_name") or "").lower()
-    sci_name_lower = (ident.get("scientific_name") or "").lower()
     confusable_families = [
         "syzygium", "psidium", "artocarpus", "eugenia", "myrtaceae",
         "nephelium", "litchi", "dimocarpus", "mangifera", "annona",
