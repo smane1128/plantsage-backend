@@ -158,3 +158,58 @@ app.include_router(care_tasks_router)
 @app.get("/")
 def root():
     return {"message": "MyPlants API is running"}
+
+
+def _backfill_care_tasks():
+    """Create care tasks for plants that have none (added before auto-creation was deployed)."""
+    import logging
+    from sqlalchemy.orm import Session
+    from models.my_garden import MyGarden
+    from models.care_task import CareTask
+    from models.scan import ScanHistory
+    from services.care_schedule_service import get_care_intervals
+    from datetime import datetime, UTC
+
+    log = logging.getLogger("plantsage.backfill")
+    with Session(engine) as db:
+        plants_without_tasks = (
+            db.query(MyGarden)
+            .filter(~MyGarden.id.in_(db.query(CareTask.plant_id).distinct()))
+            .all()
+        )
+        if not plants_without_tasks:
+            return
+        log.info("Backfilling care tasks for %d plants", len(plants_without_tasks))
+        now = datetime.now(UTC).replace(tzinfo=None)
+        for plant in plants_without_tasks:
+            scan = None
+            if plant.scientific_name:
+                scan = db.query(ScanHistory).filter(
+                    ScanHistory.scientific_name.ilike(plant.scientific_name)
+                ).first()
+            if scan is None and plant.plant_name:
+                scan = db.query(ScanHistory).filter(
+                    ScanHistory.plant_name.ilike(plant.plant_name)
+                ).first()
+            details_json = scan.details if scan else None
+            intervals = get_care_intervals(
+                details_json,
+                plant.plant_type,
+                plant_name=plant.plant_name,
+                scientific_name=plant.scientific_name,
+            )
+            for task_type, task_info in intervals.items():
+                if task_info is None:
+                    continue
+                db.add(CareTask(
+                    plant_id=plant.id,
+                    task_type=task_type,
+                    interval_days=task_info["interval_days"],
+                    last_done_at=now,
+                    schedule_source=task_info["source"],
+                ))
+            log.info("  → %s: %s", plant.plant_name, list(intervals.keys()))
+        db.commit()
+
+
+_backfill_care_tasks()
