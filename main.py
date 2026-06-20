@@ -202,7 +202,7 @@ def _get_care_history(task_id: int, db: _Session = _Depends(_get_db)):
 
 @app.get("/")
 def root():
-    return {"message": "MyPlants API is running"}
+    return {"message": "MyPlants API is running", "version": "e341c84+rename"}
 
 
 def _backfill_care_tasks():
