@@ -349,7 +349,8 @@ def get_watering_history(plant_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/export/csv")
-def export_garden_csv(db: Session = Depends(get_db)):    """Download all My Garden plants as a CSV file."""
+def export_garden_csv(db: Session = Depends(get_db)):
+    """Download all My Garden plants as a CSV file."""
     plants = db.query(MyGarden).order_by(MyGarden.date_added.desc()).all()
     output = io.StringIO()
     writer = csv.writer(output)
