@@ -11,7 +11,7 @@ from models.scan import ScanHistory
 from models.watering_history import WateringHistory
 from models.disease_scan import DiseaseScan
 from models.care_task import CareTask
-from services.care_schedule_service import get_care_intervals, get_watering_interval
+from services.care_schedule_service import get_care_intervals, get_watering_interval, get_watering_recommendation
 from datetime import datetime, UTC, timedelta
 
 router = APIRouter(prefix="/my-garden", tags=["my-garden"])
@@ -80,6 +80,28 @@ def _days_until_water(p: MyGarden) -> Optional[int]:
     return delta
 
 
+def _watering_recommended(db, p: MyGarden) -> dict | None:
+    """Compute watering recommendation from species DB (no AI call needed)."""
+    try:
+        # Try to find the scan details JSON for this plant
+        details_json = None
+        if p.scientific_name:
+            from models.scan import ScanHistory
+            scan = db.query(ScanHistory).filter(
+                ScanHistory.scientific_name.ilike(p.scientific_name)
+            ).first()
+            if scan:
+                details_json = scan.details
+        return get_watering_recommendation(
+            details_json,
+            p.plant_type,
+            plant_name=p.plant_name,
+            scientific_name=p.scientific_name,
+        )
+    except Exception:
+        return None
+
+
 @router.get("")
 def get_my_garden(db: Session = Depends(get_db)):
     plants = db.query(MyGarden).order_by(MyGarden.date_added.desc()).all()
@@ -97,6 +119,7 @@ def get_my_garden(db: Session = Depends(get_db)):
             "watering_interval_days": p.watering_interval_days,
             "last_watered_at": p.last_watered_at.isoformat() if p.last_watered_at else None,
             "days_until_water": _days_until_water(p),
+            "watering_recommended": _watering_recommended(db, p),
             "health_status": p.health_status,
             "active_disease": _active_disease(db, p.id),
             "garden_name": p.garden_name,
