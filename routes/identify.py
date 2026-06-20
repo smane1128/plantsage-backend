@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from database.db import get_db
 from models.scan import ScanHistory
 from models.garden_profile import GardenProfile
-from services.openai_service import identify_plant, identify_plant_multi, quick_get_scientific_name
+from services.openai_service import identify_plant, identify_plant_multi, quick_get_scientific_name, ai_research_pet_safety
 from services.pricing_service import generate_nursery_price
 from services.recommendation_service import get_similar_plants, get_similar_flowers, get_malaysia_alternatives
 from services.pet_safety_service import lookup_pet_safety
@@ -90,58 +90,122 @@ def _inject_prices(scan_record, result: dict | None) -> None:
     scan_record.price_large = prices["large"]
 
 
-def _inject_pet_safety(scan_record, result: dict) -> None:
-    """Resolve pet safety using the knowledge base first, AI result as fallback.
+def _inject_pet_safety(scan_record, result: dict, db=None) -> None:
+    """Hybrid pet safety engine — 3-level architecture.
 
-    Priority:
-        1. pet_safety_service database lookup (authoritative)
-        2. AI-provided pet_safe bool (labelled as 'ai' source)
-        3. 'unknown' if neither is available
-
-    Mutates result['health'] in-place and stores status/source on scan_record.
+    Level 1 — VERIFIED_DATABASE (confidence=100):
+        Check pet_safety_service.py first. Result always wins over AI.
+    Level 2 — AI_RESEARCH:
+        If no DB entry, check pet_safety_cache table, then call GPT-4o.
+        Saves successful results to cache for future lookups.
+    Level 3 — UNKNOWN:
+        If AI confidence < 70, force status=unknown.
+        Never classify a low-confidence plant as Safe.
     """
     ident = result.get("identification", {})
-    sci_name = ident.get("scientific_name") or scan_record.scientific_name or ""
-    common_name = ident.get("plant_name") or scan_record.plant_name or ""
+    sci_name    = ident.get("scientific_name") or scan_record.scientific_name or ""
+    common_name = ident.get("plant_name")      or scan_record.plant_name      or ""
 
     print(f"[pet_safety] inject → plant='{common_name}' sci='{sci_name}'")
-    db_info = lookup_pet_safety(sci_name, common_name)
-    print(f"[pet_safety] result  → status={db_info['status']} source={db_info['source']}")
     health = result.setdefault("health", {})
 
-    if db_info["source"] == "database":
-        # Authoritative: override ALL AI-provided pet safety fields
-        health["pet_safety_status"] = db_info["status"]
-        health["pet_safety_source"] = "database"
-        health["pet_safe"] = db_info["status"] == "safe"
-        health["affected_animals"] = db_info["affected_animals"]
-        health["symptoms"] = db_info["symptoms"]
-        health["toxicity_level"] = db_info["toxicity_level"]
-        # Always overwrite toxicity_notes with DB value — clears stale AI-derived text
-        # (e.g. AI returned "Toxic to cats..." for a plant that is actually safe in our DB)
-        health["toxicity_notes"] = db_info["symptoms"]
-    else:
-        # No DB entry — use AI bool but mark as AI estimate
-        ai_safe = health.get("pet_safe")
-        if ai_safe is True:
-            status = "safe"
-        elif ai_safe is False:
-            # AI says toxic but we have no DB confirmation — mark as unknown to avoid
-            # false "Not Pet Safe" for harmless plants
-            status = "unknown"
-        else:
-            status = "unknown"
-        health["pet_safety_status"] = status
-        health["pet_safety_source"] = "ai" if ai_safe is not None else "unknown"
-        health["pet_safe"] = ai_safe == True
-        health["affected_animals"] = ""
-        # For unknown status: do NOT copy AI toxicity_notes into symptoms.
-        # Showing unconfirmed toxic descriptions under "Pet Safety Unknown" is misleading.
-        health["symptoms"] = health.get("toxicity_notes", "") if status == "safe" else ""
-        health["toxicity_level"] = ""
+    # ── LEVEL 1: Verified database ────────────────────────────────────────────
+    db_info = lookup_pet_safety(sci_name, common_name)
+    if db_info["source"] == "VERIFIED_DATABASE":
+        print(f"[pet_safety] L1 VERIFIED_DATABASE → status={db_info['status']}")
+        health["pet_safety_status"]     = db_info["status"]
+        health["pet_safety_source"]     = "VERIFIED_DATABASE"
+        health["pet_safety_confidence"] = 100
+        health["pet_safe"]              = db_info["status"] == "safe"
+        health["affected_animals"]      = db_info["affected_animals"]
+        health["symptoms"]              = db_info["symptoms"]
+        health["toxicity_level"]        = db_info["toxicity_level"]
+        health["toxicity_notes"]        = db_info["symptoms"]
+        scan_record.pet_safety_status = health["pet_safety_status"]
+        scan_record.pet_safety_source = health["pet_safety_source"]
+        return
 
-    scan_record.pet_safety_status = health["pet_safety_status"]
-    scan_record.pet_safety_source = health["pet_safety_source"]
+    # ── LEVEL 2: AI Research (cache-first) ────────────────────────────────────
+    if db is not None:
+        from models.pet_safety_cache import PetSafetyCache
+        genus = sci_name.split()[0].lower() if sci_name else ""
+
+        # 2a — Cache lookup (exact scientific name, then genus)
+        cached = None
+        if sci_name:
+            cached = db.query(PetSafetyCache).filter(
+                PetSafetyCache.scientific_name == sci_name.lower()
+            ).first()
+        if cached is None and genus:
+            cached = db.query(PetSafetyCache).filter(
+                PetSafetyCache.genus == genus
+            ).first()
+
+        if cached is not None:
+            print(f"[pet_safety] L2 CACHE HIT → status={cached.safety_status} conf={cached.confidence}")
+            health["pet_safety_status"]     = cached.safety_status
+            health["pet_safety_source"]     = "AI_RESEARCH"
+            health["pet_safety_confidence"] = cached.confidence
+            health["pet_safe"]              = cached.safety_status == "safe"
+            health["affected_animals"]      = cached.affected_animals or ""
+            health["symptoms"]              = cached.symptoms or ""
+            health["toxicity_level"]        = cached.toxicity_level or ""
+            health["toxicity_notes"]        = cached.symptoms or ""
+            scan_record.pet_safety_status = health["pet_safety_status"]
+            scan_record.pet_safety_source = health["pet_safety_source"]
+            return
+
+        # 2b — AI research call
+        ai = ai_research_pet_safety(sci_name, common_name)
+        print(f"[pet_safety] L2 AI_RESEARCH → status={ai['safety_status']} conf={ai['confidence']}")
+
+        if ai["confidence"] >= 70:
+            # Save to cache so subsequent lookups skip the AI call
+            entry = PetSafetyCache(
+                scientific_name=sci_name.lower() or None,
+                genus=genus or None,
+                common_name=common_name.lower() or None,
+                safety_status=ai["safety_status"],
+                confidence=ai["confidence"],
+                source="AI_RESEARCH",
+                reasoning=ai.get("reasoning", ""),
+                affected_animals=ai.get("affected_animals", ""),
+                symptoms=ai.get("symptoms", ""),
+                toxicity_level=ai.get("toxicity_level", ""),
+            )
+            db.add(entry)
+            try:
+                db.commit()
+            except Exception as _ce:
+                db.rollback()
+                print(f"[pet_safety] cache save failed (non-fatal): {_ce}")
+
+            health["pet_safety_status"]     = ai["safety_status"]
+            health["pet_safety_source"]     = "AI_RESEARCH"
+            health["pet_safety_confidence"] = ai["confidence"]
+            health["pet_safe"]              = ai["safety_status"] == "safe"
+            health["affected_animals"]      = ai.get("affected_animals", "")
+            health["symptoms"]              = ai.get("symptoms", "")
+            health["toxicity_level"]        = ai.get("toxicity_level", "")
+            health["toxicity_notes"]        = ai.get("symptoms", "")
+            scan_record.pet_safety_status = health["pet_safety_status"]
+            scan_record.pet_safety_source = health["pet_safety_source"]
+            return
+
+        print(f"[pet_safety] L2 AI low-confidence ({ai['confidence']}) → falling to L3")
+
+    # ── LEVEL 3: Unknown — insufficient data ──────────────────────────────────
+    print(f"[pet_safety] L3 UNKNOWN for '{common_name}'")
+    health["pet_safety_status"]     = "unknown"
+    health["pet_safety_source"]     = "unknown"
+    health["pet_safety_confidence"] = 0
+    health["pet_safe"]              = False
+    health["affected_animals"]      = ""
+    health["symptoms"]              = ""
+    health["toxicity_level"]        = ""
+    health["toxicity_notes"]        = ""
+    scan_record.pet_safety_status = "unknown"
+    scan_record.pet_safety_source = "unknown"
 
 
 _RECOMMENDATION_RANK = {
@@ -504,7 +568,7 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
             print(f"[refresh] BEFORE pet_safety_status={old_status!r} pet_safety_source={old_source!r}")
 
             # Always re-resolve pet safety (cheap DB lookup, corrects old cached data)
-            _inject_pet_safety(cached, result)
+            _inject_pet_safety(cached, result, db)
 
             new_status = result.get("health", {}).get("pet_safety_status", "<not set>")
             new_source = result.get("health", {}).get("pet_safety_source", "<not set>")
@@ -614,7 +678,7 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
         # Debug: log pet_safety before and after
         print(f"[refresh] FULL AI RESCAN: plant={common_name!r} sci={sci_name!r}")
         print(f"[refresh] AI returned pet_safe={result.get('health', {}).get('pet_safe')!r}")
-        _inject_pet_safety(existing, result)
+        _inject_pet_safety(existing, result, db)
         print(f"[refresh] AFTER inject: pet_safety_status={result.get('health', {}).get('pet_safety_status')!r} source={result.get('health', {}).get('pet_safety_source')!r}")
 
         # Generate similar plants BEFORE saving details so the full list is persisted
@@ -657,7 +721,7 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
         # Apply cultivation category rules before pricing
         _inject_cultivation_category(result, from_cache=False)
         _inject_prices(scan, result)
-        _inject_pet_safety(scan, result)
+        _inject_pet_safety(scan, result, db)
 
         # Generate similar plants BEFORE saving details so the full list is persisted
         fresh_similar = get_similar_plants(result)

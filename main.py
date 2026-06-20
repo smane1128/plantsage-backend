@@ -18,6 +18,7 @@ import models.wishlist           # ensure table is registered
 import models.watering_history   # ensure table is registered
 import models.disease_scan       # ensure table is registered
 import models.care_task          # ensure table is registered
+import models.pet_safety_cache   # ensure table is registered
 
 Base.metadata.create_all(bind=engine)
 
@@ -94,6 +95,23 @@ with engine.connect() as _conn:
         "ALTER TABLE care_tasks ADD COLUMN schedule_source VARCHAR(20) DEFAULT NULL",
         # Remove repot tasks — repotting is condition-based, not calendar-based
         "DELETE FROM care_tasks WHERE task_type = 'repot'",
+        # Pet safety AI research cache
+        """CREATE TABLE IF NOT EXISTS pet_safety_cache (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            scientific_name  TEXT,
+            genus            TEXT,
+            common_name      TEXT,
+            safety_status    TEXT NOT NULL,
+            confidence       INTEGER NOT NULL,
+            source           TEXT NOT NULL DEFAULT 'AI_RESEARCH',
+            reasoning        TEXT,
+            affected_animals TEXT DEFAULT '',
+            symptoms         TEXT DEFAULT '',
+            toxicity_level   TEXT DEFAULT '',
+            created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_pet_cache_sci  ON pet_safety_cache(scientific_name)",
+        "CREATE INDEX IF NOT EXISTS idx_pet_cache_genus ON pet_safety_cache(genus)",
     ]:
         try:
             _conn.execute(text(_sql))

@@ -521,6 +521,108 @@ Rules:
 """
 
 
+# ── Pet Safety AI Research ─────────────────────────────────────────────────────
+_PET_SAFETY_RESEARCH_PROMPT = """You are a veterinary toxicologist with expertise in plant safety for domestic pets.
+Determine the pet safety classification for the following plant.
+
+Base your answer ONLY on established veterinary toxicology references (ASPCA, Pet Poison Helpline, AVMA).
+Do NOT guess. If you cannot find reliable references, return UNKNOWN.
+
+Plant to evaluate:
+  Scientific name: {scientific_name}
+  Common name: {common_name}
+
+Return ONLY a valid JSON object with this exact structure:
+{{
+  "safety_status": "SAFE" | "CAUTION" | "TOXIC" | "UNKNOWN",
+  "confidence": <integer 0-100>,
+  "toxicity_level": "None" | "Mild" | "Moderate" | "High" | "",
+  "affected_animals": "<e.g. Cats, Dogs, All pets, or empty string>",
+  "symptoms": "<brief description of adverse effects if any, or empty string>",
+  "reasoning": "<1-2 sentences explaining the classification and source>",
+  "references": "<ASPCA/PetPoisonHelpline/AVMA citation if known, or empty string>"
+}}
+
+Classification guidelines:
+- SAFE: No significant risk to cats/dogs; confirmed non-toxic by reputable sources (confidence 85-100)
+- CAUTION: Mild irritant or causes minor GI upset; monitor pet exposure (confidence 75-100)
+- TOXIC: Causes genuine harm; includes severe GI, neurological, cardiac, or organ effects (confidence 80-100)
+- UNKNOWN: Insufficient references to classify reliably (confidence 0-69)
+
+Important rules:
+- If safety is uncertain, use UNKNOWN — never falsely classify as SAFE
+- Be conservative: when evidence is mixed, prefer CAUTION over SAFE
+- Only TOXIC plants that are confirmed in authoritative sources should use that classification
+"""
+
+
+def ai_research_pet_safety(scientific_name: str, common_name: str) -> dict:
+    """Call GPT-4o to research pet safety for a plant not in the verified database.
+
+    Returns:
+        {safety_status, confidence, toxicity_level, affected_animals,
+         symptoms, reasoning, source="AI_RESEARCH"}
+    On any error, returns status="unknown", confidence=0.
+    """
+    prompt = _PET_SAFETY_RESEARCH_PROMPT.format(
+        scientific_name=scientific_name or "Unknown",
+        common_name=common_name or "Unknown",
+    )
+    print(f"[pet_safety_ai] researching → sci='{scientific_name}' com='{common_name}'")
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=400,
+            response_format={"type": "json_object"},
+        )
+        raw = response.choices[0].message.content
+        data = json.loads(raw)
+
+        # Normalise status to lowercase for consistency with the rest of the codebase
+        raw_status = (data.get("safety_status") or "UNKNOWN").upper()
+        status_map = {"SAFE": "safe", "CAUTION": "caution", "TOXIC": "toxic", "UNKNOWN": "unknown"}
+        status = status_map.get(raw_status, "unknown")
+
+        confidence = int(data.get("confidence", 0))
+
+        # Level 3 rule: confidence < 70 → force unknown, never safe
+        if confidence < 70:
+            print(f"[pet_safety_ai] low confidence ({confidence}) → forcing unknown")
+            return {
+                "safety_status":   "unknown",
+                "confidence":      confidence,
+                "toxicity_level":  "",
+                "affected_animals": "",
+                "symptoms":        "",
+                "reasoning":       data.get("reasoning", ""),
+                "source":          "AI_RESEARCH",
+            }
+
+        print(f"[pet_safety_ai] result → status={status} confidence={confidence}")
+        return {
+            "safety_status":    status,
+            "confidence":       confidence,
+            "toxicity_level":   data.get("toxicity_level", ""),
+            "affected_animals": data.get("affected_animals", ""),
+            "symptoms":         data.get("symptoms", ""),
+            "reasoning":        data.get("reasoning", ""),
+            "source":           "AI_RESEARCH",
+        }
+    except Exception as e:
+        print(f"[pet_safety_ai] ERROR: {e}")
+        return {
+            "safety_status":    "unknown",
+            "confidence":       0,
+            "toxicity_level":   "",
+            "affected_animals": "",
+            "symptoms":         "",
+            "reasoning":        "",
+            "source":           "AI_RESEARCH",
+        }
+
+
 def diagnose_disease(image_base64: str, hint_plant_name: str = None, hint_scientific_name: str = None) -> dict:
     image_bytes = base64.b64decode(image_base64)
     mime = _detect_mime(image_bytes)

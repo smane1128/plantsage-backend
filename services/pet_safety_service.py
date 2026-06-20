@@ -675,6 +675,85 @@ _SAFETY: dict[str, dict] = {
         "status": "safe", "toxicity_level": "None",
         "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
     },
+
+    # ── Required additions (per architecture spec) ───────────────────────────
+    # Queen's Wreath
+    "petrea": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "petrea volubilis": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    # Cockscomb / Celosia
+    "celosia": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "celosia argentea": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "celosia cristata": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    # Sensitive Plant / Mimosa
+    "mimosa": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "",
+        "symptoms": "Non-toxic to cats and dogs. The plant's movement when touched is harmless.",
+    },
+    "mimosa pudica": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "",
+        "symptoms": "Non-toxic to cats and dogs. The plant's movement when touched is harmless.",
+    },
+    # Dahlia — caution (causes mild GI upset)
+    "dahlia": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "May cause mild skin irritation and GI upset (vomiting, diarrhea) if ingested.",
+    },
+    # Marigold / Tagetes — caution (pyrethrin-like compounds)
+    "tagetes": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "May cause mild skin irritation and GI upset. Ingestion of large amounts can cause drooling, vomiting.",
+    },
+    "tagetes erecta": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "May cause mild skin irritation and GI upset if ingested.",
+    },
+    "tagetes patula": {
+        "status": "caution", "toxicity_level": "Mild",
+        "affected_animals": "Cats, Dogs",
+        "symptoms": "May cause mild skin irritation and GI upset if ingested.",
+    },
+    # Zinnia — safe
+    "zinnia": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "zinnia elegans": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    # Cosmos — safe
+    "cosmos": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "cosmos sulphureus": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
+    "cosmos bipinnatus": {
+        "status": "safe", "toxicity_level": "None",
+        "affected_animals": "", "symptoms": "Non-toxic to cats and dogs.",
+    },
 }
 
 # ─── Common name aliases → scientific name (lowercase) ───────────────────────
@@ -816,6 +895,29 @@ _ALIASES: dict[str, str] = {
     "galangal":              "alpinia galanga",
     "lengkuas":              "alpinia galanga",
     "red ginger":            "alpinia purpurata",
+    # New additions — required spec plants
+    "queen's wreath":        "petrea volubilis",
+    "queens wreath":         "petrea volubilis",
+    "petrea":                "petrea volubilis",
+    "purple wreath":         "petrea volubilis",
+    "cockscomb":             "celosia argentea",
+    "celosia":               "celosia argentea",
+    "woolflower":            "celosia argentea",
+    "sensitive plant":       "mimosa pudica",
+    "touch-me-not":          "mimosa pudica",
+    "touch me not":          "mimosa pudica",
+    "mimosa":                "mimosa pudica",
+    "shame plant":           "mimosa pudica",
+    "pokok semalu":          "mimosa pudica",
+    "semalu":                "mimosa pudica",
+    "dahlia":                "dahlia",
+    "marigold":              "tagetes erecta",
+    "african marigold":      "tagetes erecta",
+    "french marigold":       "tagetes patula",
+    "calendula":             "tagetes",
+    "zinnia":                "zinnia elegans",
+    "cosmos":                "cosmos sulphureus",
+    "sulphur cosmos":        "cosmos sulphureus",
 }
 
 
@@ -831,8 +933,8 @@ def lookup_pet_safety(scientific_name: str, common_name: str) -> dict:
         Returns status="unknown" if nothing matches.
 
     Returns:
-        {status, toxicity_level, affected_animals, symptoms, source}
-        source is always "database" when found, "unknown" otherwise.
+        {status, toxicity_level, affected_animals, symptoms, source, confidence}
+        source is "VERIFIED_DATABASE" (confidence=100) when found, "unknown" (confidence=0) otherwise.
     """
     def _make(entry: dict, matched_key: str) -> dict:
         print(f"[pet_safety] MATCH '{matched_key}' → status={entry['status']}")
@@ -841,7 +943,8 @@ def lookup_pet_safety(scientific_name: str, common_name: str) -> dict:
             "toxicity_level":   entry.get("toxicity_level", ""),
             "affected_animals": entry.get("affected_animals", ""),
             "symptoms":         entry.get("symptoms", ""),
-            "source":           "database",
+            "source":           "VERIFIED_DATABASE",
+            "confidence":       100,
         }
 
     sci = (scientific_name or "").strip().lower()
@@ -893,4 +996,5 @@ def lookup_pet_safety(scientific_name: str, common_name: str) -> dict:
         "affected_animals": "",
         "symptoms":         "",
         "source":           "unknown",
+        "confidence":       0,
     }
