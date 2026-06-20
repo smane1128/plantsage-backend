@@ -258,6 +258,7 @@ def remove_from_my_garden(plant_id: int, db: Session = Depends(get_db)):
 
 class UpdateNotesRequest(BaseModel):
     notes: Optional[str] = None
+    garden_name: Optional[str] = None   # also accept rename via this endpoint
 
 
 @router.patch("/{plant_id}/notes")
@@ -265,9 +266,12 @@ def update_notes(plant_id: int, request: UpdateNotesRequest, db: Session = Depen
     plant = db.query(MyGarden).filter(MyGarden.id == plant_id).first()
     if not plant:
         raise HTTPException(status_code=404, detail="Plant not found.")
-    plant.notes = request.notes
+    if request.notes is not None:
+        plant.notes = request.notes
+    if request.garden_name is not None:
+        plant.garden_name = request.garden_name.strip() or None
     db.commit()
-    return {"message": "Notes updated."}
+    return {"message": "Updated.", "garden_name": plant.garden_name}
 
 
 class WateringScheduleRequest(BaseModel):
