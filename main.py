@@ -203,9 +203,10 @@ def _get_care_history(task_id: int, db: _Session = _Depends(_get_db)):
 @app.get("/")
 def root():
     import os
-    key = os.getenv("OPENAI_API_KEY", "")
+    key = os.getenv("OPENAI_KEY") or os.getenv("OPENAI_API_KEY", "")
     key_hint = (key[:8] + "..." + key[-4:]) if len(key) > 12 else ("SET" if key else "NOT SET")
-    return {"message": "MyPlants API is running", "version": "e341c84+key2", "key_hint": key_hint}
+    var_used = "OPENAI_KEY" if os.getenv("OPENAI_KEY") else "OPENAI_API_KEY"
+    return {"message": "MyPlants API is running", "version": "e341c84+key2", "key_hint": key_hint, "var": var_used}
 
 
 def _backfill_care_tasks():

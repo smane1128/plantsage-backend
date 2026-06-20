@@ -17,7 +17,9 @@ def _detect_mime(image_bytes: bytes) -> str:
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Support both OPENAI_KEY (new) and OPENAI_API_KEY (legacy) env var names
+_api_key = os.getenv("OPENAI_KEY") or os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=_api_key)
 
 PLANT_PROMPT = """
 You are analyzing a plant for a Malaysian gardener. Malaysia is a tropical country with:
