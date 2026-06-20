@@ -257,4 +257,8 @@ def _backfill_care_tasks():
         db.commit()
 
 
-_backfill_care_tasks()
+try:
+    _backfill_care_tasks()
+except Exception as _bf_err:
+    import logging as _bl
+    _bl.getLogger("plantsage.backfill").warning("Backfill skipped: %s", _bf_err)
