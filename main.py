@@ -155,6 +155,51 @@ app.include_router(reset_router)
 app.include_router(care_tasks_router)
 
 
+# ── Inline routes (bypass route-file caching issue) ─────────────────────────
+from fastapi import Depends as _Depends
+from pydantic import BaseModel as _BaseModel
+from typing import Optional as _Optional
+from sqlalchemy.orm import Session as _Session
+from database.db import get_db as _get_db
+from models.my_garden import MyGarden as _MyGarden
+from models.care_task import CareTask as _CareTask
+from models.care_task_history import CareTaskHistory as _CareTaskHistory
+from fastapi import HTTPException as _HTTPException
+from datetime import datetime as _datetime, UTC as _UTC
+
+class _RenamePlantReq(_BaseModel):
+    garden_name: str
+
+@app.patch("/my-garden/{plant_id}/rename")
+def _rename_plant(plant_id: int, req: _RenamePlantReq, db: _Session = _Depends(_get_db)):
+    p = db.query(_MyGarden).filter(_MyGarden.id == plant_id).first()
+    if not p:
+        raise _HTTPException(status_code=404, detail="Plant not found.")
+    p.garden_name = req.garden_name.strip() or None
+    db.commit()
+    return {"message": "Plant renamed.", "garden_name": p.garden_name}
+
+class _UpdateScheduleReq(_BaseModel):
+    interval_days: int
+
+@app.patch("/care-tasks/{task_id}/schedule")
+def _update_care_schedule(task_id: int, req: _UpdateScheduleReq, db: _Session = _Depends(_get_db)):
+    t = db.query(_CareTask).filter(_CareTask.id == task_id).first()
+    if not t:
+        raise _HTTPException(status_code=404, detail="Task not found.")
+    t.interval_days = max(1, req.interval_days)
+    db.commit()
+    return {"message": "Schedule updated.", "interval_days": t.interval_days}
+
+@app.get("/care-tasks/{task_id}/history")
+def _get_care_history(task_id: int, db: _Session = _Depends(_get_db)):
+    rows = (db.query(_CareTaskHistory)
+              .filter(_CareTaskHistory.task_id == task_id)
+              .order_by(_CareTaskHistory.done_at.desc())
+              .limit(50).all())
+    return [{"done_at": r.done_at.isoformat(), "notes": r.notes} for r in rows]
+
+
 @app.get("/")
 def root():
     return {"message": "MyPlants API is running"}
