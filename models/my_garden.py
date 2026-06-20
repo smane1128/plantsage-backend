@@ -21,3 +21,4 @@ class MyGarden(Base):
     garden_name            = Column(String, nullable=True)    # user label e.g. "Red Rose", "Pot #1"
     location               = Column(String, nullable=True)    # e.g. "Front Yard", "Balcony"
     purchase_date          = Column(DateTime, nullable=True)  # when user bought/acquired the plant
+    planting_type          = Column(String, nullable=True)    # 'pot' | 'ground'

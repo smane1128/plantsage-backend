@@ -112,6 +112,8 @@ with engine.connect() as _conn:
         )""",
         "CREATE INDEX IF NOT EXISTS idx_pet_cache_sci  ON pet_safety_cache(scientific_name)",
         "CREATE INDEX IF NOT EXISTS idx_pet_cache_genus ON pet_safety_cache(genus)",
+        # Planting type: pot or in-ground
+        "ALTER TABLE my_garden ADD COLUMN planting_type TEXT DEFAULT NULL",
     ]:
         try:
             _conn.execute(text(_sql))

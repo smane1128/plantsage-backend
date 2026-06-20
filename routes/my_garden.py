@@ -29,6 +29,7 @@ class AddPlantRequest(BaseModel):
     location: Optional[str] = None
     purchase_date: Optional[str] = None   # ISO date string YYYY-MM-DD
     cultivation_category: Optional[str] = None
+    planting_type: Optional[str] = None       # 'pot' | 'ground'
 
 
 def _resolve_image(db: Session, stored_path: Optional[str], scientific_name: Optional[str], plant_name: Optional[str]) -> Optional[str]:
@@ -125,6 +126,7 @@ def get_my_garden(db: Session = Depends(get_db)):
             "garden_name": p.garden_name,
             "location": p.location,
             "purchase_date": p.purchase_date.isoformat() if p.purchase_date else None,
+            "planting_type": p.planting_type,
         }
         for p in plants
     ]
@@ -162,6 +164,7 @@ def add_to_my_garden(request: AddPlantRequest, db: Session = Depends(get_db)):
         garden_name=request.garden_name or None,
         location=request.location or None,
         purchase_date=parsed_purchase_date,
+        planting_type=request.planting_type or None,
     )
     db.add(plant)
     db.commit()
@@ -183,12 +186,19 @@ def add_to_my_garden(request: AddPlantRequest, db: Session = Depends(get_db)):
 
     # ── Auto-set watering interval if not already set ─────────────────────
     if not plant.watering_interval_days:
-        plant.watering_interval_days = get_watering_interval(
+        rec = get_watering_recommendation(
             details_json,
             request.plant_type,
             plant_name=request.plant_name,
             scientific_name=request.scientific_name,
         )
+        if request.planting_type == 'ground' and rec.get('ground_range'):
+            try:
+                plant.watering_interval_days = int(rec['ground_range'].split('-')[0])
+            except (ValueError, IndexError):
+                plant.watering_interval_days = rec['interval']
+        else:
+            plant.watering_interval_days = rec['interval']
     intervals = get_care_intervals(
         details_json,
         request.plant_type,
