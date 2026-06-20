@@ -81,6 +81,17 @@ def _days_until_water(p: MyGarden) -> Optional[int]:
     return delta
 
 
+def _care_days_until_due(t: CareTask) -> Optional[int]:
+    """Days until a care task is due. Negative = overdue."""
+    if not t.last_done_at:
+        return 0
+    last = t.last_done_at
+    if last.tzinfo is not None:
+        last = last.replace(tzinfo=None)
+    next_due = last + timedelta(days=t.interval_days)
+    return (next_due.date() - datetime.now(UTC).date()).days
+
+
 def _watering_recommended(db, p: MyGarden) -> dict | None:
     """Compute watering recommendation from species DB (no AI call needed)."""
     try:
@@ -127,6 +138,17 @@ def get_my_garden(db: Session = Depends(get_db)):
             "location": p.location,
             "purchase_date": p.purchase_date.isoformat() if p.purchase_date else None,
             "planting_type": p.planting_type,
+            "care_tasks": [
+                {
+                    "id":              t.id,
+                    "task_type":       t.task_type,
+                    "interval_days":   t.interval_days,
+                    "last_done_at":    t.last_done_at.isoformat() if t.last_done_at else None,
+                    "days_until_due":  _care_days_until_due(t),
+                    "schedule_source": t.schedule_source,
+                }
+                for t in db.query(CareTask).filter(CareTask.plant_id == p.id).order_by(CareTask.task_type).all()
+            ],
         }
         for p in plants
     ]
@@ -322,8 +344,7 @@ def get_watering_history(plant_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/export/csv")
-def export_garden_csv(db: Session = Depends(get_db)):
-    """Download all My Garden plants as a CSV file."""
+def export_garden_csv(db: Session = Depends(get_db)):    """Download all My Garden plants as a CSV file."""
     plants = db.query(MyGarden).order_by(MyGarden.date_added.desc()).all()
     output = io.StringIO()
     writer = csv.writer(output)
@@ -346,3 +367,18 @@ def export_garden_csv(db: Session = Depends(get_db)):
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=my_garden.csv"},
     )
+
+
+class RenamePlantRequest(BaseModel):
+    garden_name: str
+
+
+@router.patch("/{plant_id}/rename")
+def rename_plant(plant_id: int, request: RenamePlantRequest, db: Session = Depends(get_db)):
+    """Update the custom garden name for a plant."""
+    plant = db.query(MyGarden).filter(MyGarden.id == plant_id).first()
+    if not plant:
+        raise HTTPException(status_code=404, detail="Plant not found.")
+    plant.garden_name = request.garden_name.strip() or None
+    db.commit()
+    return {"message": "Plant renamed.", "garden_name": plant.garden_name}

@@ -8,6 +8,7 @@ from datetime import datetime, UTC, timedelta
 
 from database.db import get_db
 from models.care_task import CareTask
+from models.care_task_history import CareTaskHistory
 from models.my_garden import MyGarden
 from models.scan import ScanHistory
 from services.care_schedule_service import get_care_intervals
@@ -123,6 +124,14 @@ def complete_care_task(
     task.last_done_at = now
     if request.notes:
         task.notes = request.notes
+    # Log to care_task_history
+    db.add(CareTaskHistory(
+        task_id=task.id,
+        plant_id=task.plant_id,
+        task_type=task.task_type,
+        done_at=now,
+        notes=request.notes,
+    ))
     db.commit()
     return {
         "message":       f"{task.task_type.capitalize()} marked as done.",
@@ -139,6 +148,40 @@ def delete_care_task(task_id: int, db: Session = Depends(get_db)):
     db.delete(task)
     db.commit()
     return {"message": "Care task schedule removed."}
+
+
+@router.get("/{task_id}/history")
+def get_care_task_history(task_id: int, db: Session = Depends(get_db)):
+    """Return completion history for a care task (newest first, last 50 entries)."""
+    history = (
+        db.query(CareTaskHistory)
+          .filter(CareTaskHistory.task_id == task_id)
+          .order_by(CareTaskHistory.done_at.desc())
+          .limit(50)
+          .all()
+    )
+    return [{"done_at": h.done_at.isoformat(), "notes": h.notes} for h in history]
+
+
+class UpdateScheduleRequest(BaseModel):
+    interval_days: int
+
+
+@router.patch("/{task_id}/schedule")
+def update_care_task_schedule(
+    task_id: int,
+    request: UpdateScheduleRequest,
+    db: Session = Depends(get_db)
+):
+    """Update the repeat interval for a care task."""
+    task = db.query(CareTask).filter(CareTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Care task not found.")
+    if request.interval_days < 1:
+        raise HTTPException(status_code=400, detail="Interval must be at least 1 day.")
+    task.interval_days = request.interval_days
+    db.commit()
+    return {"message": "Schedule updated.", "interval_days": task.interval_days}
 
 
 @router.post("/fix-nulls")

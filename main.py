@@ -19,6 +19,7 @@ import models.watering_history   # ensure table is registered
 import models.disease_scan       # ensure table is registered
 import models.care_task          # ensure table is registered
 import models.pet_safety_cache   # ensure table is registered
+import models.care_task_history  # ensure table is registered
 
 Base.metadata.create_all(bind=engine)
 
@@ -114,6 +115,17 @@ with engine.connect() as _conn:
         "CREATE INDEX IF NOT EXISTS idx_pet_cache_genus ON pet_safety_cache(genus)",
         # Planting type: pot or in-ground
         "ALTER TABLE my_garden ADD COLUMN planting_type TEXT DEFAULT NULL",
+        # Care task history (completion log per task)
+        """CREATE TABLE IF NOT EXISTS care_task_history (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id   INTEGER REFERENCES care_tasks(id) ON DELETE SET NULL,
+            plant_id  INTEGER NOT NULL REFERENCES my_garden(id) ON DELETE CASCADE,
+            task_type TEXT NOT NULL,
+            done_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            notes     TEXT
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_care_hist_task_id  ON care_task_history(task_id)",
+        "CREATE INDEX IF NOT EXISTS idx_care_hist_plant_id ON care_task_history(plant_id)",
     ]:
         try:
             _conn.execute(text(_sql))
