@@ -365,6 +365,24 @@ def _enforce_score_consistency(result: dict, plant_name: str) -> None:
     print(f"[consistency] {plant_name!r}: final score={current_score}  band={result['score_band']['label']!r}  rec={rec!r}  malaysia={malaysia_suitable}")
 
 
+def _inject_watering_rec(result: dict) -> None:
+    """Compute and attach watering_recommended to result in-place.
+
+    Called BEFORE every json.dumps(result) DB save so the stored JSON
+    always contains the structured watering recommendation.
+    """
+    ident = result.get("identification", {})
+    try:
+        result["watering_recommended"] = get_watering_recommendation(
+            json.dumps(result),
+            ident.get("plant_type"),
+            plant_name=ident.get("plant_name"),
+            scientific_name=ident.get("scientific_name"),
+        )
+    except Exception:
+        pass  # never let this block a scan save
+
+
 def _inject_cultivation_category(result: dict, from_cache: bool = False) -> str:
     """Determine cultivation category and apply business rules to result.
 
@@ -592,6 +610,7 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
                 print(f"[sync] cache-hit: col suitability_score {cached.suitability_score} → {enforced_score}")
                 cached.suitability_score = enforced_score
                 cached.recommendation    = enforced_rec
+            _inject_watering_rec(result)  # store recommendation in DB JSON
             cached.details = json.dumps(result)
             db.commit()  # persist updated details + pet_safety columns + synced score
 
@@ -614,12 +633,6 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
                     "confidence": "Estimated",
                 }
             result["display_mode"] = get_display_mode(result)
-            result["watering_recommended"] = get_watering_recommendation(
-                json.dumps(result),
-                result.get("identification", {}).get("plant_type"),
-                plant_name=result.get("identification", {}).get("plant_name"),
-                scientific_name=result.get("identification", {}).get("scientific_name"),
-            )
             return result
 
     # ── Step 2: New plant — load garden profile and generate full AI report ──
@@ -704,6 +717,7 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
             print(f"[sync] existing: col suitability_score {existing.suitability_score} → {enforced_score}")
             existing.suitability_score = enforced_score
             existing.recommendation    = enforced_rec
+        _inject_watering_rec(result)  # store recommendation in DB JSON
         existing.details = json.dumps(result)
         db.commit()
         result["_meta"] = {
@@ -745,6 +759,7 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
         print(f"[sync] new: col suitability_score {scan.suitability_score} → {enforced_score}")
         scan.suitability_score = enforced_score
         scan.recommendation    = enforced_rec
+        _inject_watering_rec(result)  # store recommendation in DB JSON
         scan.details = json.dumps(result)
         db.commit()
         result["_meta"] = {
@@ -769,13 +784,6 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
             "confidence": "Estimated",
         }
     result["display_mode"] = get_display_mode(result)
-    # Attach watering recommendation
-    result["watering_recommended"] = get_watering_recommendation(
-        json.dumps(result),
-        result.get("identification", {}).get("plant_type"),
-        plant_name=result.get("identification", {}).get("plant_name"),
-        scientific_name=result.get("identification", {}).get("scientific_name"),
-    )
     # Attach evidence metadata for multi-photo scans
     if is_multi:
         result["_evidence"] = {
