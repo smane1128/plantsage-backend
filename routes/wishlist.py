@@ -6,6 +6,9 @@ from database.db import get_db
 from models.wishlist import Wishlist
 from models.my_garden import MyGarden
 from models.scan import ScanHistory
+from models.care_task import CareTask
+from services.care_schedule_service import get_care_intervals, get_watering_recommendation
+from datetime import datetime, UTC
 
 router = APIRouter(prefix="/wishlist", tags=["wishlist"])
 
@@ -129,4 +132,46 @@ def move_to_garden(plant_id: int, db: Session = Depends(get_db)):
     db.add(garden_plant)
     db.delete(plant)
     db.commit()
+    db.refresh(garden_plant)
+
+    # ── Auto-create care task schedules (same as add_to_garden) ──────────────
+    scan = None
+    if garden_plant.scientific_name:
+        scan = db.query(ScanHistory).filter(
+            ScanHistory.scientific_name.ilike(garden_plant.scientific_name)
+        ).first()
+    if scan is None and garden_plant.plant_name:
+        scan = db.query(ScanHistory).filter(
+            ScanHistory.plant_name.ilike(garden_plant.plant_name)
+        ).first()
+
+    details_json = scan.details if scan else None
+
+    # Set watering interval
+    rec = get_watering_recommendation(
+        details_json, garden_plant.plant_type,
+        plant_name=garden_plant.plant_name,
+        scientific_name=garden_plant.scientific_name,
+    )
+    garden_plant.watering_interval_days = rec['interval']
+
+    # Create care tasks
+    intervals = get_care_intervals(
+        details_json, garden_plant.plant_type,
+        plant_name=garden_plant.plant_name,
+        scientific_name=garden_plant.scientific_name,
+    )
+    now = datetime.now(UTC).replace(tzinfo=None)
+    for task_type, task_info in intervals.items():
+        if task_info is None:
+            continue
+        db.add(CareTask(
+            plant_id=garden_plant.id,
+            task_type=task_type,
+            interval_days=task_info["interval_days"],
+            last_done_at=now,
+            schedule_source=task_info["source"],
+        ))
+    db.commit()
+
     return {"message": f"'{garden_plant.plant_name}' moved to your garden!"}

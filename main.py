@@ -206,13 +206,13 @@ def root():
 
 
 def _backfill_care_tasks():
-    """Create care tasks for plants that have none (added before auto-creation was deployed)."""
+    """Create care tasks / watering interval for plants that have none (added before auto-creation was deployed)."""
     import logging
     from sqlalchemy.orm import Session
     from models.my_garden import MyGarden
     from models.care_task import CareTask
     from models.scan import ScanHistory
-    from services.care_schedule_service import get_care_intervals
+    from services.care_schedule_service import get_care_intervals, get_watering_recommendation
     from datetime import datetime, UTC
 
     log = logging.getLogger("plantsage.backfill")
@@ -237,6 +237,14 @@ def _backfill_care_tasks():
                     ScanHistory.plant_name.ilike(plant.plant_name)
                 ).first()
             details_json = scan.details if scan else None
+            # Set watering interval if missing
+            if not plant.watering_interval_days:
+                rec = get_watering_recommendation(
+                    details_json, plant.plant_type,
+                    plant_name=plant.plant_name,
+                    scientific_name=plant.scientific_name,
+                )
+                plant.watering_interval_days = rec['interval']
             intervals = get_care_intervals(
                 details_json,
                 plant.plant_type,
