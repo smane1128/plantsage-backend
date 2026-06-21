@@ -12,6 +12,7 @@ from services.recommendation_service import get_similar_plants, get_similar_flow
 from services.pet_safety_service import lookup_pet_safety
 from services.cultivation_service import get_cultivation_category, get_gardenability_score, is_special_plant, get_botanical_info, get_score_band, get_location_override
 from services.plant_rules import get_display_mode
+from services.care_schedule_service import get_watering_recommendation
 from utils.rate_limit import check_ai_rate_limit
 import json
 
@@ -613,6 +614,12 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
                     "confidence": "Estimated",
                 }
             result["display_mode"] = get_display_mode(result)
+            result["watering_recommended"] = get_watering_recommendation(
+                json.dumps(result),
+                result.get("identification", {}).get("plant_type"),
+                plant_name=result.get("identification", {}).get("plant_name"),
+                scientific_name=result.get("identification", {}).get("scientific_name"),
+            )
             return result
 
     # ── Step 2: New plant — load garden profile and generate full AI report ──
@@ -762,6 +769,13 @@ def identify(request: ImageRequest, db: Session = Depends(get_db)):
             "confidence": "Estimated",
         }
     result["display_mode"] = get_display_mode(result)
+    # Attach watering recommendation
+    result["watering_recommended"] = get_watering_recommendation(
+        json.dumps(result),
+        result.get("identification", {}).get("plant_type"),
+        plant_name=result.get("identification", {}).get("plant_name"),
+        scientific_name=result.get("identification", {}).get("scientific_name"),
+    )
     # Attach evidence metadata for multi-photo scans
     if is_multi:
         result["_evidence"] = {
