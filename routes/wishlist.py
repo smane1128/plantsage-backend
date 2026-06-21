@@ -128,6 +128,7 @@ def move_to_garden(plant_id: int, db: Session = Depends(get_db)):
         recommendation=plant.recommendation,
         suitability_score=plant.suitability_score,
         image_path=plant.image_path,
+        notes=plant.notes or None,
     )
     db.add(garden_plant)
     db.delete(plant)
