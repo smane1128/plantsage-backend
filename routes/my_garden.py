@@ -31,6 +31,7 @@ class AddPlantRequest(BaseModel):
     purchase_date: Optional[str] = None   # ISO date string YYYY-MM-DD
     cultivation_category: Optional[str] = None
     planting_type: Optional[str] = None       # 'pot' | 'ground'
+    health_status: Optional[str] = None       # 'healthy' | 'sick' | 'recovering'
 
 
 def _resolve_image(db: Session, stored_path: Optional[str], scientific_name: Optional[str], plant_name: Optional[str]) -> Optional[str]:
@@ -188,6 +189,7 @@ def add_to_my_garden(request: AddPlantRequest, db: Session = Depends(get_db)):
         location=request.location or None,
         purchase_date=parsed_purchase_date,
         planting_type=request.planting_type or None,
+        health_status=request.health_status or None,
     )
     db.add(plant)
     db.commit()
