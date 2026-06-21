@@ -1410,9 +1410,14 @@ def _img_query(name: str) -> str:
 def get_similar_flowers(result: dict, max_results: int = 5) -> list[dict]:
     """
     Return plants that VISUALLY resemble the scanned plant.
-    Searches _GLOBAL_FLOWERS (worldwide flowers) + flowering _PLANTS (Malaysian).
     Scoring: botanical family (35%) + flower shape (30%) + bloom style (15%)
              + color overlap (15%) + habit (5%).
+
+    Quality-first display rules:
+      - 3+ plants score >=90 → show top 3
+      - 2 plants score >=90  → show 2
+      - 1 plant  score >=90  → show 1
+      - 0 plants score >=90  → fallback: show top 2 (any score)
     """
     input_vis  = _extract_visual_attrs(result)
     input_name = result.get("identification", {}).get("plant_name", "").lower().strip()
@@ -1445,6 +1450,16 @@ def get_similar_flowers(result: dict, max_results: int = 5) -> list[dict]:
 
     scored.sort(key=lambda x: -x[0])
 
+    # Quality-first display rules
+    HIGH = 0.90
+    high_quality = [(s, p) for s, p in scored if s >= HIGH]
+    if len(high_quality) >= 3:
+        final_scored = high_quality[:3]
+    elif len(high_quality) >= 1:
+        final_scored = high_quality  # 1 or 2 high-quality matches
+    else:
+        final_scored = scored[:2]  # fallback: top 2 regardless of score
+
     return [
         {
             "name":            p["name"],
@@ -1455,7 +1470,7 @@ def get_similar_flowers(result: dict, max_results: int = 5) -> list[dict]:
             "score":           round(raw_score * 100),
             "category":        p.get("category", ""),
         }
-        for raw_score, p in scored[:max_results]
+        for raw_score, p in final_scored
     ]
 
 
@@ -1464,7 +1479,9 @@ def get_malaysia_alternatives(result: dict, max_results: int = 5) -> list[dict]:
     Return Malaysia-suitable plants with similar gardening profile.
     Scoring: category (30%) + landscape (20%) + habit (20%) + sunlight (10%)
              + water (10%) + maintenance (5%) + flowering (5%).
-    All _PLANTS entries are Malaysia-suitable.
+
+    Quality threshold: only show plants scoring >=88%.  Max 3 cards.
+    If none qualify, returns empty list.
     """
     input_attrs = _extract_attrs(result)
     input_name  = result.get("identification", {}).get("plant_name", "").lower().strip()
@@ -1478,6 +1495,11 @@ def get_malaysia_alternatives(result: dict, max_results: int = 5) -> list[dict]:
 
     scored.sort(key=lambda x: -x[0])
 
+    # Strict quality filtering: only show >=88%, max 3
+    ALT_THRESHOLD = 0.88
+    qualified = [(s, p) for s, p in scored if s >= ALT_THRESHOLD]
+    final_scored = qualified[:3]
+
     return [
         {
             "name":            p["name"],
@@ -1488,7 +1510,7 @@ def get_malaysia_alternatives(result: dict, max_results: int = 5) -> list[dict]:
             "score":           round(raw_score * 100),
             "category":        p.get("category", ""),
         }
-        for raw_score, p in scored[:max_results]
+        for raw_score, p in final_scored
     ]
 
 # =============================================================================
