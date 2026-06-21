@@ -148,6 +148,21 @@ def move_to_garden(plant_id: int, db: Session = Depends(get_db)):
 
     details_json = scan.details if scan else None
 
+    # Auto-set health_status from scan result
+    if details_json:
+        import json as _json
+        try:
+            _d = _json.loads(details_json)
+            raw_health = (_d.get("health") or {}).get("health_status", "").lower()
+            if "healthy" in raw_health or "good" in raw_health or "excellent" in raw_health:
+                garden_plant.health_status = "healthy"
+            elif "recover" in raw_health:
+                garden_plant.health_status = "recovering"
+            elif "sick" in raw_health or "disease" in raw_health or "poor" in raw_health:
+                garden_plant.health_status = "sick"
+        except Exception:
+            pass
+
     # Set watering interval
     rec = get_watering_recommendation(
         details_json, garden_plant.plant_type,
