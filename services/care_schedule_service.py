@@ -670,6 +670,355 @@ _WATERING_GROUND_RANGE: dict[str, str] = {
     "other":      "3-5",
 }
 
+# ── Rich watering care intelligence ──────────────────────────────────────────
+# Per-species and per-type data for: finger test, symptom recognition,
+# seasonal adjustments and pot-vs-ground guidance.
+# Used by get_watering_recommendation() to enrich the returned dict.
+#
+# Each entry has:
+#   finger_test   str       — how to check soil moisture before watering
+#   overwatering  list[str] — visible symptoms of overwatering
+#   underwatering list[str] — visible symptoms of underwatering
+#   hot_season    str       — guidance for Malaysia hot/dry months (Mar-Sep)
+#   rainy_season  str       — guidance for monsoon months (Oct-Feb)
+#   pot_vs_ground str       — key differences between container and in-ground
+
+_SPECIES_RICH_CARE: dict[str, dict] = {
+    "hibiscus rosa-sinensis": {
+        "finger_test": "Insert finger 2–3 cm into soil. Water when the top feels dry but not bone-dry.",
+        "overwatering": ["Yellowing lower leaves", "Wilting despite moist soil", "Root rot smell from soil"],
+        "underwatering": ["Drooping leaves and buds", "Dry crispy leaf edges", "Bud drop"],
+        "hot_season": "Water every 1–2 days. Check morning and evening during heatwaves.",
+        "rainy_season": "Reduce to every 2–3 days. Ensure pot or bed drains freely.",
+        "pot_vs_ground": "Pots dry out quickly — check daily in hot weather. In-ground plants retain moisture longer.",
+    },
+    "bougainvillea spectabilis": {
+        "finger_test": "Insert finger 3–4 cm. Water when soil is almost dry — controlled dryness encourages flowering.",
+        "overwatering": ["Very few or no flowers", "Yellow leaves", "Root rot", "Soft stem base"],
+        "underwatering": ["Leaf and bract drop", "Wilting stems", "Dry brittle branches"],
+        "hot_season": "Water every 2–3 days. Some dryness between waterings actually promotes more blooms.",
+        "rainy_season": "Reduce to every 5–7 days. Natural rainfall is usually sufficient for established plants.",
+        "pot_vs_ground": "Pot: water every 2–4 days. Ground: established bougainvillea is highly drought-tolerant.",
+    },
+    "adenium obesum": {
+        "finger_test": "Insert finger 5 cm. Water ONLY when completely dry — adenium stores water in its swollen caudex.",
+        "overwatering": ["Soft or mushy caudex (often fatal)", "Black rotting roots", "Yellow dropping leaves"],
+        "underwatering": ["Wrinkled or shrunken caudex", "Leaf drop", "Pale limp stems"],
+        "hot_season": "Water every 7–10 days. Allow full soil dry-out between each watering.",
+        "rainy_season": "Water every 14–21 days. Protect from waterlogging — this is the most common cause of death. Ensure excellent drainage.",
+        "pot_vs_ground": "Always use pots with large drainage holes and gritty/sandy mix. Heavy garden soil is fatal.",
+    },
+    "plumeria rubra": {
+        "finger_test": "Insert finger 3–4 cm. Water when soil feels almost dry.",
+        "overwatering": ["Black stem rot at base", "Yellow leaves", "No flowering"],
+        "underwatering": ["Leaf drop (often seasonal and normal)", "Shriveled soft stems", "Slow growth"],
+        "hot_season": "Water every 3–5 days. Drought-tolerant once established.",
+        "rainy_season": "Reduce to every 6–8 days. Excellent drainage is critical — standing water causes fatal stem rot.",
+        "pot_vs_ground": "Ground planting is best. If using a pot, use very sandy mix with no water retention.",
+    },
+    "ixora coccinea": {
+        "finger_test": "Insert finger 2–3 cm. Water when top feels dry.",
+        "overwatering": ["Yellow chlorotic leaves", "Root rot", "Reduced flowering"],
+        "underwatering": ["Wilting stems", "Brown dry leaf edges", "Flower and bud drop"],
+        "hot_season": "Water every 1–2 days. Mulch around base to retain moisture.",
+        "rainy_season": "Reduce to every 3–4 days. Ensure free drainage.",
+        "pot_vs_ground": "Pot: check daily in hot weather. In-ground ixoras are very adaptable once established.",
+    },
+    "jasminum sambac": {
+        "finger_test": "Insert finger 2–3 cm. Water when the top feels dry.",
+        "overwatering": ["Yellow leaves", "Reduced flowering", "Soggy soil smell", "Root rot"],
+        "underwatering": ["Wilting", "Poor flowering", "Dry crispy tips on leaves"],
+        "hot_season": "Water every 1–2 days. Water at the base — avoid wetting the flowers.",
+        "rainy_season": "Reduce to every 3–4 days. Good air circulation prevents fungal issues.",
+        "pot_vs_ground": "Both work well. Ground plants need less frequent watering once established.",
+    },
+    "rosa": {
+        "finger_test": "Insert finger 3–4 cm. Water when top feels dry.",
+        "overwatering": ["Black spot fungal disease on leaves", "Yellow leaves", "Root rot"],
+        "underwatering": ["Wilting", "Smaller or fewer blooms", "Brown crispy leaf edges"],
+        "hot_season": "Water every 1–2 days. Water at the base, avoid wetting leaves. Apply mulch.",
+        "rainy_season": "Reduce watering. Ensure good drainage. Watch closely for fungal leaf disease.",
+        "pot_vs_ground": "Ground gives best performance. Pot roses need more frequent watering and fertilising.",
+    },
+    "murraya koenigii": {
+        "finger_test": "Insert finger 3 cm. Water when top feels slightly dry.",
+        "overwatering": ["Yellow leaves", "Root rot", "Leaf drop"],
+        "underwatering": ["Dry crispy leaf edges", "Leaf curl", "Very slow growth"],
+        "hot_season": "Water every 2–3 days. Fertilise monthly to sustain leaf production.",
+        "rainy_season": "Reduce to every 4–5 days. Check that pot drains freely.",
+        "pot_vs_ground": "Performs well in both. In-ground plants need less frequent watering once established.",
+    },
+    "monstera deliciosa": {
+        "finger_test": "Insert finger 3–4 cm. Water when the top half of soil feels dry.",
+        "overwatering": ["Yellow leaves", "Mushy stems", "Root rot", "Soggy soil smell"],
+        "underwatering": ["Droopy curling leaves", "Brown crispy leaf edges", "Slow growth"],
+        "hot_season": "Water every 4–6 days. Mist leaves in the morning to boost humidity.",
+        "rainy_season": "Reduce to every 7–10 days. Check soil moisture before each watering.",
+        "pot_vs_ground": "Pot: ensure drainage holes. As a ground cover, check drainage — root rot is the main risk.",
+    },
+    "epipremnum aureum": {
+        "finger_test": "Insert finger 2–3 cm. Water when top feels dry — pothos tolerates neglect better than overwatering.",
+        "overwatering": ["Yellow leaves", "Mushy black stems", "Soil smells sour", "Black root tips"],
+        "underwatering": ["Wilting and drooping", "Crispy brown tips", "Curling yellowing leaves"],
+        "hot_season": "Water every 2–3 days. Mist leaves occasionally to increase humidity.",
+        "rainy_season": "Reduce to every 5–7 days. Prioritise drainage over frequency.",
+        "pot_vs_ground": "Pot: excellent choice, easy to manage. Ground: spreads vigorously, monitor soil moisture.",
+    },
+    "aloe barbadensis": {
+        "finger_test": "Insert finger 4–5 cm. Water ONLY when completely dry — aloe stores water in its thick leaves.",
+        "overwatering": ["Soft translucent or mushy leaves", "Brown rotting base", "Foul soil smell"],
+        "underwatering": ["Thin wrinkled leaves", "Brown dry tips", "Leaves lean outward"],
+        "hot_season": "Water every 10–14 days. Ensure full soil dry-out between waterings.",
+        "rainy_season": "Reduce or pause watering — natural rainfall is usually sufficient. Protect from waterlogging.",
+        "pot_vs_ground": "Use well-draining sandy/gritty soil. Pots must have drainage holes — standing water is fatal.",
+    },
+    "asplenium nidus": {
+        "finger_test": "Insert finger 2–3 cm. Water when top feels slightly dry — ferns prefer consistent moisture.",
+        "overwatering": ["Yellow leaves", "Black mushy crown centre", "Root rot smell"],
+        "underwatering": ["Brown crispy leaf tips", "Drooping fronds", "Shriveled dry crown"],
+        "hot_season": "Water every 4–5 days. Mist leaves daily during dry spells to maintain humidity.",
+        "rainy_season": "Reduce to every 7–9 days. Ensure pot drains fully — crown rot is a common issue.",
+        "pot_vs_ground": "Pot: monitor closely, small pots dry fast. Ground under trees: stays moist naturally.",
+    },
+    "phalaenopsis": {
+        "finger_test": "Lift the pot — it needs water when it feels very light. Check roots: green = moist, grey/white = thirsty.",
+        "overwatering": ["Yellow leaves", "Dark brown mushy roots", "Flower drop", "Root rot under media"],
+        "underwatering": ["Wrinkled limp leaves", "Silvery shriveled roots", "No new growth or flower spike"],
+        "hot_season": "Water every 5–7 days. Ensure roots dry completely between waterings — good airflow is essential.",
+        "rainy_season": "Reduce to every 10–14 days. Never let water sit in the crown or flower base.",
+        "pot_vs_ground": "Always use clear pots with drainage holes and bark/perlite mix. Never use garden soil.",
+    },
+    "dracaena trifasciata": {
+        "finger_test": "Insert finger 4–5 cm. Water only when completely dry — snake plants thrive on neglect.",
+        "overwatering": ["Soft mushy leaf bases", "Yellow or brown leaves", "Foul-smelling soil", "Root rot"],
+        "underwatering": ["Slightly wrinkled leaves", "Very slow growth", "Bone-dry soil pulling from pot edges"],
+        "hot_season": "Water every 10–14 days. Always verify soil is completely dry before watering.",
+        "rainy_season": "Water once a month or less. One of the most drought-tolerant houseplants.",
+        "pot_vs_ground": "Best in pots with drainage. In-ground only in very well-drained raised beds.",
+    },
+    "spathiphyllum wallisii": {
+        "finger_test": "Insert finger 2–3 cm. Water when top feels dry — peace lily droops slightly to signal thirst.",
+        "overwatering": ["Yellow leaves", "Wilting despite moist soil", "Root rot", "Heavy soggy soil"],
+        "underwatering": ["Dramatic drooping (recovers quickly after watering)", "Brown leaf tips", "Dry soil"],
+        "hot_season": "Water every 3–4 days. Keep away from direct sun to reduce moisture loss.",
+        "rainy_season": "Reduce to every 5–7 days. Peace lily prefers stable indoor conditions.",
+        "pot_vs_ground": "Best as an indoor pot plant. Ensure drainage holes — peace lily dislikes waterlogged roots.",
+    },
+    "gardenia jasminoides": {
+        "finger_test": "Insert finger 2–3 cm. Water when top feels dry — gardenias like consistent moisture.",
+        "overwatering": ["Yellow leaves", "Bud drop before opening", "Root rot smell"],
+        "underwatering": ["Crispy brown leaf edges", "Bud drop", "Dry compact soil"],
+        "hot_season": "Water every 2–3 days. Mulch around base. Mist leaves to raise humidity.",
+        "rainy_season": "Reduce to every 4–6 days. Monitor for fungal leaf spots.",
+        "pot_vs_ground": "Pot: use acidic, well-draining mix. In-ground: excellent drainage essential.",
+    },
+    "zamioculcas zamiifolia": {
+        "finger_test": "Insert finger 4–5 cm. Water only when fully dry — ZZ stores water in underground rhizomes.",
+        "overwatering": ["Yellow leaves", "Rotting rhizomes", "Mushy stems at soil level", "Foul smell"],
+        "underwatering": ["Wrinkled yellowing leaves", "Leaf drop", "Very slow growth"],
+        "hot_season": "Water every 12–16 days. One of the most drought-tolerant indoor plants.",
+        "rainy_season": "Water once a month or less.",
+        "pot_vs_ground": "Best in pots with excellent drainage. Ideal as an indoor plant.",
+    },
+    "musa paradisiaca": {
+        "finger_test": "Check soil 5 cm deep. Banana needs consistent moisture — never let it dry out completely.",
+        "overwatering": ["Yellow outer leaves", "Soft rotting pseudostem at base", "Fungal crown issues"],
+        "underwatering": ["Leaf edges curl and brown", "Slow fruit development", "Pale yellow-green colour"],
+        "hot_season": "Water every 1–2 days. Water deeply — banana is a heavy feeder and drinker.",
+        "rainy_season": "Reduce watering but maintain soil moisture. Ensure drainage to prevent crown rot.",
+        "pot_vs_ground": "Ground planting gives best results. Large container (minimum 60L) if potting.",
+    },
+    "heliconia psittacorum": {
+        "finger_test": "Check soil 3–4 cm. Keep consistently moist but not waterlogged.",
+        "overwatering": ["Yellowing base leaves", "Soft rotting pseudostems", "Mushy rhizomes"],
+        "underwatering": ["Leaf edges curl and brown", "No flowers produced", "Stunted growth"],
+        "hot_season": "Water every 2–3 days. Mulch generously to retain moisture.",
+        "rainy_season": "Reduce to every 4–5 days. Heliconias love tropical humidity.",
+        "pot_vs_ground": "Ground planting is the natural habitat. Pot: needs large container (30L+).",
+    },
+    "capsicum annuum": {
+        "finger_test": "Insert finger 3 cm. Water when the top half feels dry.",
+        "overwatering": ["Yellow lower leaves", "Root rot", "Blossom drop", "Soggy soil"],
+        "underwatering": ["Wilting in heat", "Small fruit", "Blossom drop", "Crispy leaf edges"],
+        "hot_season": "Water every 1–2 days. Consistent moisture improves fruit set and reduces blossom drop.",
+        "rainy_season": "Reduce to every 3–4 days. Watch closely for fungal diseases on leaves.",
+        "pot_vs_ground": "Pot: minimum 10-litre container, water frequently. Ground: more drought-tolerant once established.",
+    },
+}
+
+# Common-name aliases for the species rich care lookup
+_COMMON_RICH_CARE: dict[str, dict] = {
+    "hibiscus": _SPECIES_RICH_CARE["hibiscus rosa-sinensis"],
+    "bunga raya": _SPECIES_RICH_CARE["hibiscus rosa-sinensis"],
+    "bougainvillea": _SPECIES_RICH_CARE["bougainvillea spectabilis"],
+    "bunga kertas": _SPECIES_RICH_CARE["bougainvillea spectabilis"],
+    "desert rose": _SPECIES_RICH_CARE["adenium obesum"],
+    "adenium": _SPECIES_RICH_CARE["adenium obesum"],
+    "frangipani": _SPECIES_RICH_CARE["plumeria rubra"],
+    "plumeria": _SPECIES_RICH_CARE["plumeria rubra"],
+    "kamboja": _SPECIES_RICH_CARE["plumeria rubra"],
+    "ixora": _SPECIES_RICH_CARE["ixora coccinea"],
+    "jasmine": _SPECIES_RICH_CARE["jasminum sambac"],
+    "bunga melur": _SPECIES_RICH_CARE["jasminum sambac"],
+    "rose": _SPECIES_RICH_CARE["rosa"],
+    "mawar": _SPECIES_RICH_CARE["rosa"],
+    "curry leaf": _SPECIES_RICH_CARE["murraya koenigii"],
+    "daun kari": _SPECIES_RICH_CARE["murraya koenigii"],
+    "monstera": _SPECIES_RICH_CARE["monstera deliciosa"],
+    "pothos": _SPECIES_RICH_CARE["epipremnum aureum"],
+    "money plant": _SPECIES_RICH_CARE["epipremnum aureum"],
+    "aloe vera": _SPECIES_RICH_CARE["aloe barbadensis"],
+    "aloe": _SPECIES_RICH_CARE["aloe barbadensis"],
+    "bird nest fern": _SPECIES_RICH_CARE["asplenium nidus"],
+    "asplenium": _SPECIES_RICH_CARE["asplenium nidus"],
+    "orchid": _SPECIES_RICH_CARE["phalaenopsis"],
+    "phalaenopsis": _SPECIES_RICH_CARE["phalaenopsis"],
+    "snake plant": _SPECIES_RICH_CARE["dracaena trifasciata"],
+    "sansevieria": _SPECIES_RICH_CARE["dracaena trifasciata"],
+    "peace lily": _SPECIES_RICH_CARE["spathiphyllum wallisii"],
+    "gardenia": _SPECIES_RICH_CARE["gardenia jasminoides"],
+    "zz plant": _SPECIES_RICH_CARE["zamioculcas zamiifolia"],
+    "zamioculcas": _SPECIES_RICH_CARE["zamioculcas zamiifolia"],
+    "banana": _SPECIES_RICH_CARE["musa paradisiaca"],
+    "pisang": _SPECIES_RICH_CARE["musa paradisiaca"],
+    "heliconia": _SPECIES_RICH_CARE["heliconia psittacorum"],
+    "chili": _SPECIES_RICH_CARE["capsicum annuum"],
+    "cili": _SPECIES_RICH_CARE["capsicum annuum"],
+    "pepper": _SPECIES_RICH_CARE["capsicum annuum"],
+}
+
+# Type-level rich care defaults — used when no species match is found.
+_TYPE_RICH_CARE: dict[str, dict] = {
+    "succulent": {
+        "finger_test": "Insert finger 4–5 cm. Water ONLY when completely dry — succulents store water in their leaves.",
+        "overwatering": ["Soft translucent or mushy leaves", "Rotting stem base", "Foul-smelling soil"],
+        "underwatering": ["Thin wrinkled or puckered leaves", "Dry soil pulling from pot edges"],
+        "hot_season": "Water every 10–14 days. Always allow full dry-out. Morning watering preferred.",
+        "rainy_season": "Reduce to every 14–21 days. Protect from prolonged waterlogging.",
+        "pot_vs_ground": "Use fast-draining gritty/sandy mix. Drainage holes are essential — standing water is fatal.",
+    },
+    "cactus": {
+        "finger_test": "Insert finger 5 cm or use a wooden skewer. Water only when bone-dry.",
+        "overwatering": ["Soft mushy body or base", "Yellow or brown discoloration", "Falling or limp spines"],
+        "underwatering": ["Wrinkled or shrunken stem", "Dull flat appearance"],
+        "hot_season": "Water every 14–21 days. Full dry-out is essential.",
+        "rainy_season": "Water every 21–30 days or less. Protect from excess rainfall.",
+        "pot_vs_ground": "Use cactus/sand mix with drainage holes. Avoid heavy garden soil.",
+    },
+    "fern": {
+        "finger_test": "Insert finger 2–3 cm. Water when the top feels slightly dry — ferns prefer consistent moisture.",
+        "overwatering": ["Yellow leaves", "Black or brown mushy crown", "Root rot smell"],
+        "underwatering": ["Brown crispy leaf tips", "Drooping or wilting fronds", "Dry compact soil"],
+        "hot_season": "Water every 3–5 days. Mist leaves daily in hot dry spells.",
+        "rainy_season": "Reduce to every 6–9 days. Ensure free drainage.",
+        "pot_vs_ground": "Pot: dries out faster, needs regular monitoring. Ground under trees: stays naturally moist.",
+    },
+    "orchid": {
+        "finger_test": "Lift the pot — water when it feels very light. Check roots: white/grey = thirsty, green = moist.",
+        "overwatering": ["Dark mushy roots", "Yellow limp leaves", "Flower drop"],
+        "underwatering": ["Silvery wrinkled roots", "Limp leaves", "No new growth or flower spike"],
+        "hot_season": "Water every 5–7 days. Roots must dry between waterings.",
+        "rainy_season": "Water every 10–14 days. Never let water sit in crown. Good airflow is critical.",
+        "pot_vs_ground": "Always use clear pots with bark/perlite mix and drainage holes. Never use garden soil.",
+    },
+    "herb": {
+        "finger_test": "Insert finger 2–3 cm. Water when top feels dry — most herbs prefer evenly moist soil.",
+        "overwatering": ["Yellow lower leaves", "Wilting despite moist soil", "Root rot", "Fungal stem issues"],
+        "underwatering": ["Wilting and drooping", "Dry crispy leaf edges", "Slow growth"],
+        "hot_season": "Water every 1–2 days. Harvest regularly to encourage bushy growth.",
+        "rainy_season": "Reduce to every 3–4 days. Ensure good drainage to prevent fungal disease.",
+        "pot_vs_ground": "Pot: water more frequently, small pots dry fast. Ground: moderate consistent watering.",
+    },
+    "vegetable": {
+        "finger_test": "Insert finger 3 cm. Water when the top half feels dry — consistency matters for good yield.",
+        "overwatering": ["Yellow leaves", "Root rot", "Blossom drop", "Fungal diseases"],
+        "underwatering": ["Wilting", "Small or bitter fruit", "Blossom drop", "Slow growth"],
+        "hot_season": "Water every 1–2 days. Early morning watering reduces evaporation and disease risk.",
+        "rainy_season": "Reduce to every 2–3 days. Monitor for fungal diseases common in wet weather.",
+        "pot_vs_ground": "Pot: water frequently, minimum 15-litre container for fruiting crops. Ground: water deeply.",
+    },
+    "flower": {
+        "finger_test": "Insert finger 2–3 cm. Water when the top feels dry.",
+        "overwatering": ["Yellow leaves", "Bud or flower drop", "Root rot", "Wilting despite wet soil"],
+        "underwatering": ["Wilting", "Bud drop", "Dry crispy leaf edges"],
+        "hot_season": "Water every 1–2 days. Water at the base to keep leaves dry.",
+        "rainy_season": "Reduce to every 3–4 days. Ensure good drainage.",
+        "pot_vs_ground": "Pot: check daily in hot weather. Ground: generally less maintenance once established.",
+    },
+    "shrub": {
+        "finger_test": "Insert finger 3 cm. Water when the top feels dry.",
+        "overwatering": ["Yellow leaves", "Root rot", "Reduced flowering"],
+        "underwatering": ["Wilting", "Brown dry leaf edges", "Slow growth"],
+        "hot_season": "Water every 1–3 days depending on sun exposure. Mulch to retain moisture.",
+        "rainy_season": "Reduce to every 3–5 days. Established shrubs handle rain well.",
+        "pot_vs_ground": "Ground is generally preferred for shrubs. Pot: use large container, monitor drainage.",
+    },
+    "tree": {
+        "finger_test": "Check soil 5 cm deep near the root zone. Water when top layer feels dry.",
+        "overwatering": ["Yellow leaves", "Root rot", "Fungal bark diseases", "Wilting despite wet soil"],
+        "underwatering": ["Leaf drop", "Brown crispy leaves", "Slow or no new growth"],
+        "hot_season": "Young trees: water every 2–4 days. Established trees: every 5–7 days.",
+        "rainy_season": "Reduce or pause for established trees. Young trees: every 5–7 days.",
+        "pot_vs_ground": "Ground planting gives best long-term results. Pot trees need more frequent watering.",
+    },
+    "vine": {
+        "finger_test": "Insert finger 2–3 cm. Water when the top feels dry.",
+        "overwatering": ["Yellow leaves", "Root rot", "Reduced flowering or fruiting"],
+        "underwatering": ["Wilting tendrils", "Leaf drop", "Poor flowering"],
+        "hot_season": "Water every 1–3 days. Vines in full sun dry out quickly.",
+        "rainy_season": "Reduce to every 3–5 days. Ensure drainage at the root zone.",
+        "pot_vs_ground": "Ground gives best vigour. Pot: large container needed with regular watering.",
+    },
+    "palm": {
+        "finger_test": "Check soil 5 cm deep. Water when the top feels dry — palms tolerate some drought.",
+        "overwatering": ["Yellow fronds", "Root rot", "Trunk rot at base"],
+        "underwatering": ["Brown dry frond tips", "Drooping older fronds", "Slow new growth"],
+        "hot_season": "Water every 3–5 days. Deep watering encourages strong root growth.",
+        "rainy_season": "Reduce to every 7–10 days. Most Malaysian palms love natural rainfall.",
+        "pot_vs_ground": "Ground: best for large palms. Pot: works for smaller palms with good drainage.",
+    },
+    "other": {
+        "finger_test": "Insert finger 2–3 cm into soil. Water when the top layer feels dry.",
+        "overwatering": ["Yellow leaves", "Wilting despite moist soil", "Root rot smell from soil"],
+        "underwatering": ["Wilting or drooping", "Dry crispy leaf edges", "Bone-dry soil"],
+        "hot_season": "Water at the more frequent end of the recommended range. Check soil every 1–2 days.",
+        "rainy_season": "Reduce frequency and always check soil moisture before watering.",
+        "pot_vs_ground": "Pots dry out faster than ground beds. Check pot plants more frequently in hot weather.",
+    },
+}
+
+
+def _lookup_rich_care(
+    scientific_name: str | None,
+    common_name:     str | None,
+    plant_type:      str | None,
+) -> dict:
+    """Return rich watering care data for a plant.
+
+    Priority: species by scientific name → species by common name → plant type → default.
+    """
+    # 1. Species match by scientific name
+    if scientific_name:
+        sci = scientific_name.lower().strip()
+        for key in _SPECIES_RICH_CARE:
+            if sci == key or sci.startswith(key.split()[0] + " ") or sci == key.split()[0]:
+                return _SPECIES_RICH_CARE[key]
+    # 2. Common name match
+    if common_name:
+        cn = common_name.lower().strip()
+        if cn in _COMMON_RICH_CARE:
+            return _COMMON_RICH_CARE[cn]
+        for key in _COMMON_RICH_CARE:
+            if key in cn or cn in key:
+                return _COMMON_RICH_CARE[key]
+    # 3. Plant type fallback
+    pt = (plant_type or "").lower().strip()
+    for key in _TYPE_RICH_CARE:
+        if key in pt:
+            return _TYPE_RICH_CARE[key]
+    return _TYPE_RICH_CARE["other"]
+
+
 # Plant-type-aware clamping for AI-parsed watering text.
 # Prevents "daily" AI advice from setting a shrub to 1 day,
 # and "fortnightly" advice from making a vegetable wait 14 days.
@@ -858,39 +1207,54 @@ def get_watering_recommendation(
     scientific_name: str | None = None,
 ) -> dict:
     """
-    Return a watering recommendation with a human-readable range.
+    Return a watering recommendation with a human-readable range and rich
+    care intelligence (finger test, symptom signs, seasonal guidance).
 
     Returns:
         {
-          "interval": int,          # recommended reminder interval (days)
-          "pot_range": "1-2",       # days range for potted plants
-          "ground_range": "2-3",    # days range for in-ground (None if not applicable)
-          "display": "Every 1–2 days (pot) · 2–3 days (ground)",
-          "source": str,            # species_specific | ai_estimated | plant_type_rule
+          "interval":       int,
+          "pot_range":      "1-2",
+          "ground_range":   "2-3",
+          "display":        "Every 1–2 days (pot) · 2–3 days (ground)",
+          "source":         str,           # species_specific | ai_estimated | plant_type_rule
+          "finger_test":    str,           # how to check soil moisture
+          "overwatering":   list[str],     # visible symptoms of overwatering
+          "underwatering":  list[str],     # visible symptoms of underwatering
+          "hot_season":     str,           # Malaysia hot/dry season adjustment
+          "rainy_season":   str,           # Malaysia monsoon season adjustment
+          "pot_vs_ground":  str,           # key pot vs in-ground differences
         }
     """
     pt = (plant_type or "").lower().strip()
+    rich = _lookup_rich_care(scientific_name, plant_name, plant_type)
 
-    # 1. Species override
-    species = _lookup_species(scientific_name, plant_name)
-    if species:
-        interval   = max(1, species["watering_days"])
-        pot_range  = species.get("watering_range", str(interval))
-        gnd_range  = species.get("watering_ground")
-
+    def _build(interval, pot_range, gnd_range, source) -> dict:
         display = f"Every {pot_range} days"
         if gnd_range:
             display += f" (pot) · {gnd_range} days (ground)"
         else:
             display += " (pot)"
-
         return {
-            "interval":     interval,
-            "pot_range":    pot_range,
-            "ground_range": gnd_range,
-            "display":      display,
-            "source":       SOURCE_SPECIES,
+            "interval":      interval,
+            "pot_range":     pot_range,
+            "ground_range":  gnd_range,
+            "display":       display,
+            "source":        source,
+            "finger_test":   rich.get("finger_test", ""),
+            "overwatering":  rich.get("overwatering", []),
+            "underwatering": rich.get("underwatering", []),
+            "hot_season":    rich.get("hot_season", ""),
+            "rainy_season":  rich.get("rainy_season", ""),
+            "pot_vs_ground": rich.get("pot_vs_ground", ""),
         }
+
+    # 1. Species override
+    species = _lookup_species(scientific_name, plant_name)
+    if species:
+        interval  = max(1, species["watering_days"])
+        pot_range = species.get("watering_range", str(interval))
+        gnd_range = species.get("watering_ground")
+        return _build(interval, pot_range, gnd_range, SOURCE_SPECIES)
 
     bounds    = _WATERING_TYPE_BOUNDS.get(pt, (1, 7))
     pot_range = _WATERING_DEFAULTS_RANGE.get(pt, "2-3")
@@ -907,29 +1271,14 @@ def get_watering_recommendation(
             days = _text_to_days(watering_text)
             if days is not None:
                 interval = max(bounds[0], min(bounds[1], days))
-                # Build a display range around the AI-derived value
                 if interval == 1:
                     ai_pot_range = "1-2"
                 else:
                     ai_pot_range = f"{max(1, interval-1)}-{interval+1}"
-                display = f"Every {ai_pot_range} days (pot) · {gnd_range} days (ground)"
-                return {
-                    "interval":     interval,
-                    "pot_range":    ai_pot_range,
-                    "ground_range": gnd_range,
-                    "display":      display,
-                    "source":       SOURCE_AI,
-                }
+                return _build(interval, ai_pot_range, gnd_range, SOURCE_AI)
         except (json.JSONDecodeError, AttributeError):
             pass
 
     # 3. Type fallback
     interval = _WATERING_DEFAULTS.get(pt, _WATERING_DEFAULT)
-    display  = f"Every {pot_range} days (pot) · {gnd_range} days (ground)"
-    return {
-        "interval":     interval,
-        "pot_range":    pot_range,
-        "ground_range": gnd_range,
-        "display":      display,
-        "source":       SOURCE_TYPE,
-    }
+    return _build(interval, pot_range, gnd_range, SOURCE_TYPE)
