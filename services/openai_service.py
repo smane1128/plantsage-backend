@@ -19,7 +19,11 @@ load_dotenv()
 
 # Support both OPENAI_KEY (new) and OPENAI_API_KEY (legacy) env var names
 _api_key = os.getenv("OPENAI_KEY") or os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=_api_key)
+if not _api_key:
+    # Don't crash the whole server at startup; AI calls will fail until the key is set.
+    import logging
+    logging.getLogger("plantsage").warning("OPENAI_KEY / OPENAI_API_KEY is not set — AI features will fail.")
+client = OpenAI(api_key=_api_key or "missing-openai-key")
 
 PLANT_PROMPT = """
 You are analyzing a plant for a Malaysian gardener. Malaysia is a tropical country with:

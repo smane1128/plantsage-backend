@@ -7,6 +7,9 @@ import os
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./myplants.db")
+# Railway/Heroku give "postgres://", which SQLAlchemy no longer accepts.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 engine = create_engine(
     DATABASE_URL,
