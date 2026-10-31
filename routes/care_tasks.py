@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import Optional
 from datetime import datetime, UTC, timedelta
 
@@ -102,7 +103,16 @@ def create_care_task(request: CreateCareTaskRequest, db: Session = Depends(get_d
         schedule_source="plant_type_rule",  # manual adds use generic rule
     )
     db.add(task)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if db.query(CareTask).filter(
+            CareTask.plant_id == request.plant_id,
+            CareTask.task_type == request.task_type,
+        ).first():
+            raise HTTPException(status_code=409, detail="A schedule already exists for this plant and task type.")
+        raise
     db.refresh(task)
     label = plant.garden_name or plant.plant_name
     return {
@@ -145,6 +155,9 @@ def delete_care_task(task_id: int, db: Session = Depends(get_db)):
     task = db.query(CareTask).filter(CareTask.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Care task not found.")
+    db.query(CareTaskHistory).filter(CareTaskHistory.task_id == task_id).update(
+        {CareTaskHistory.task_id: None}
+    )
     db.delete(task)
     db.commit()
     return {"message": "Care task schedule removed."}

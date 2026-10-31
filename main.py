@@ -11,7 +11,7 @@ from routes.compare import router as compare_router
 from routes.reset import router as reset_router
 from routes.care_tasks import router as care_tasks_router
 from routes.plant_doctor import router as plant_doctor_router
-from database.db import engine, Base
+from database.db import engine, Base, repair_care_tasks
 from sqlalchemy import text
 import models.garden_profile    # ensure table is registered
 import models.my_garden          # ensure table is registered
@@ -134,6 +134,8 @@ with engine.connect() as _conn:
         except Exception as _e:
             import logging as _logging
             _logging.getLogger("plantsage.migration").debug("Migration skipped (already applied): %s", _e)
+
+repair_care_tasks(engine)
 
 app = FastAPI(title="MyPlants API", version="1.0.0")
 

@@ -4,6 +4,7 @@ Developer Tools – Reset All Data
 POST /dev/reset
   • Creates a timestamped backup of myplants.db in backups/
   • Truncates all user-generated tables (DELETE FROM …)
+  • Includes care schedules and completion history
   • Does NOT drop tables or modify the schema
   • Returns backup path and row counts deleted
 """
@@ -24,6 +25,8 @@ router = APIRouter(prefix="/dev", tags=["developer"])
 # ── Tables to clear ──────────────────────────────────────────────────────────
 # Order matters: child tables first to respect FK constraints.
 _TABLES_TO_CLEAR = [
+    "care_task_history",
+    "care_tasks",
     "watering_history",
     "disease_scans",
     "wishlist",

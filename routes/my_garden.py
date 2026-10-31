@@ -12,6 +12,7 @@ from models.scan import ScanHistory
 from models.watering_history import WateringHistory
 from models.disease_scan import DiseaseScan
 from models.care_task import CareTask
+from models.care_task_history import CareTaskHistory
 from services.care_schedule_service import get_care_intervals, get_watering_interval, get_watering_recommendation
 from datetime import datetime, UTC, timedelta
 
@@ -253,6 +254,13 @@ def remove_from_my_garden(plant_id: int, db: Session = Depends(get_db)):
     plant = db.query(MyGarden).filter(MyGarden.id == plant_id).first()
     if not plant:
         raise HTTPException(status_code=404, detail="Plant not found.")
+    # SQLite deployments may not enforce the foreign-key cascade.
+    db.query(CareTaskHistory).filter(CareTaskHistory.plant_id == plant_id).delete()
+    db.query(CareTask).filter(CareTask.plant_id == plant_id).delete()
+    db.query(WateringHistory).filter(WateringHistory.plant_id == plant_id).delete()
+    db.query(DiseaseScan).filter(DiseaseScan.plant_id == plant_id).update(
+        {DiseaseScan.plant_id: None}
+    )
     db.delete(plant)
     db.commit()
     return {"message": f"'{plant.plant_name}' removed from your garden."}
